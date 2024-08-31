@@ -2,10 +2,10 @@
 name = "espeak-rs"
 version = "0.1.0"
 license = "MIT"
-authors = ["Eitan Isaacson <eitan@monotonous.org>"]
+authors = []
 description = "eSpeak NG playback library"
 keywords = ["espeak-ng", "audio", "tts", "speech", "rodio"]
-repository = "https://github.com/eeejay/espeaker"
+repository = "https://github.com/thewh1teagle/piper-rs"
 edition = "2021"
 
 [dependencies]
