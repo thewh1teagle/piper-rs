@@ -4,3 +4,6 @@
 [submodule "crates/espeak-rs/sys/espeak-ng"]
 	path = crates/espeak-rs/sys/espeak-ng
 	url = https://github.com/espeak-ng/espeak-ng
+[submodule "crates/sonic-rs-sys/sonic"]
+	path = crates/sonic-rs-sys/sonic
+	url = https://github.com/waywardgeek/sonic
