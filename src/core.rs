@@ -51,8 +51,8 @@ impl Phonemes {
         &self.0
     }
 
-    pub fn to_vec(self) -> Vec<String> {
-        self.0
+    pub fn to_vec(&self) -> Vec<String> {
+        self.0.clone()
     }
 
     pub fn num_sentences(&self) -> usize {
@@ -66,6 +66,7 @@ impl From<Vec<String>> for Phonemes {
     }
 }
 
+#[allow(clippy::to_string_trait_impl)]
 impl std::string::ToString for Phonemes {
     fn to_string(&self) -> String {
         self.0.join(" ")
