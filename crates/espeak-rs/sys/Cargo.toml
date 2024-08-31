@@ -12,6 +12,7 @@ include = [
     "espeak-ng/vim",
     "espeak-ng/phsource",
     "espeak-ng/tests",
+    "espeak-ng-data/",
     "src/*.rs",
     "build.rs",
     "wrapper.h",
