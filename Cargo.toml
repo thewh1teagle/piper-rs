@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 espeak-rs = { path = "crates/espeak-rs", version = "0.1.0" }
-sonic-sys = { path = "crates/sonic-sys", version = "0.1.0" }
+sonic-rs-sys = { path = "crates/sonic-rs-sys", version = "0.1.0" }
 ndarray = "0.16.1"
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0.89"
