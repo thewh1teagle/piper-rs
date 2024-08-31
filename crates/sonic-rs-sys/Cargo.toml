@@ -15,9 +15,6 @@ include = [
     "sonic/*.c",
     "sonic/*.h",
     "sonic/Makefile",
-    "espeak-ng/src",
-    "espeak-ng/espeak-ng-data",
-    "espeak-ng-data",
     "src/*.rs",
     "build.rs",
 ]

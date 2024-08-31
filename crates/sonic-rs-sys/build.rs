@@ -31,8 +31,8 @@ fn main() {
     copy_folder(&sonic_src, &sonic_dst);
 
     println!("cargo:rustc-link-lib=static=libsonic");
-    // println!("cargo:rerun-if-changed=./sonic/sonic.h");
-    // println!("cargo:rerun-if-changed=./sonic/sonic.c");
+    println!("cargo:rerun-if-changed=./sonic/sonic.h");
+    println!("cargo:rerun-if-changed=./sonic/sonic.c");
 
     cc::Build::new()
         .file("./sonic/sonic.c")
