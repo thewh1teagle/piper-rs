@@ -8,7 +8,10 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::audio_ops;
-use crate::core::{Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, SonataAudioResult, SonataError, SonataModel, SonataResult};
+use crate::core::{
+    Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, SonataAudioResult, SonataError,
+    SonataModel, SonataResult,
+};
 
 #[allow(dead_code)]
 pub fn param_to_percent(value: f32, min: f32, max: f32) -> u8 {
@@ -18,7 +21,6 @@ pub fn param_to_percent(value: f32, min: f32, max: f32) -> u8 {
 pub fn percent_to_param(value: u8, min: f32, max: f32) -> f32 {
     (value as f32 / 100.0f32) * (max - min) + min
 }
-
 
 const RATE_RANGE: (f32, f32) = (0.5f32, 5.5f32);
 const VOLUME_RANGE: (f32, f32) = (0.0f32, 1.0f32);
@@ -360,7 +362,7 @@ impl RealtimeSpeechStream {
             let mut num_processed_chunks = 0;
             for ph_sent in phonemes {
                 chunk_size = if num_processed_chunks != 0 {
-                    chunk_size  * chunk_factor * num_processed_chunks
+                    chunk_size * chunk_factor * num_processed_chunks
                 } else {
                     chunk_size
                 };
@@ -378,7 +380,7 @@ impl RealtimeSpeechStream {
                         );
                         match send_result {
                             Ok(num_chunks) => num_processed_chunks += num_chunks,
-                            Err(_) => return
+                            Err(_) => return,
                         };
                     }
                     Err(e) => {

@@ -6,8 +6,8 @@ wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_fem
 cargo run --example usage en_US-hfc_female-medium.onnx.json
 */
 
-use rodio::buffer::SamplesBuffer;
 use piper_rs::synth::SonataSpeechSynthesizer;
+use rodio::buffer::SamplesBuffer;
 use std::path::Path;
 
 fn init_ort_environment() {
@@ -25,11 +25,11 @@ fn main() {
     let voice = piper_rs::from_config_path(Path::new(&config_path)).unwrap();
     let synth = SonataSpeechSynthesizer::new(voice).unwrap();
     let mut samples: Vec<f32> = Vec::new();
-    let audio = synth.synthesize_parallel(text,  None).unwrap();
+    let audio = synth.synthesize_parallel(text, None).unwrap();
     for result in audio {
         samples.append(&mut result.unwrap().into_vec());
     }
-        
+
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();
 

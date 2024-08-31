@@ -36,11 +36,9 @@ impl AudioSamples {
     pub fn take(&mut self) -> Vec<f32> {
         std::mem::take(&mut self.0)
     }
-    pub fn take_range(&mut self, mut  sample_range: std::ops::Range<usize>) -> Vec<f32> {
+    pub fn take_range(&mut self, mut sample_range: std::ops::Range<usize>) -> Vec<f32> {
         sample_range.end = sample_range.end.min(self.len());
-        Vec::from_iter(
-            self.0.drain(sample_range)
-        )
+        Vec::from_iter(self.0.drain(sample_range))
     }
     pub fn len(&self) -> usize {
         self.0.len()

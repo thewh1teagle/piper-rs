@@ -5,8 +5,8 @@ use ort::{Session, SessionInputs, SessionOutputs, Value};
 use serde::Deserialize;
 
 mod audio_ops;
-pub mod synth;
 mod core;
+pub mod synth;
 use core::{
     Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, SonataAudioResult, SonataError,
     SonataModel, SonataResult,
@@ -62,7 +62,6 @@ fn load_model_config(config_path: &Path) -> SonataResult<(ModelConfig, PiperSynt
     };
     Ok((model_config, synth_config))
 }
-
 
 fn create_inference_session(model_path: &Path) -> Result<ort::Session, ort::Error> {
     Session::builder()?
@@ -181,7 +180,7 @@ trait VitsModelCommons {
                 .unwrap_or("unknown".to_string()),
         )])
     }
-    
+
     fn _do_set_default_synth_config(&self, new_config: &PiperSynthesisConfig) -> SonataResult<()> {
         let mut synth_config = self.get_synth_config().write().unwrap();
         synth_config.length_scale = new_config.length_scale;
@@ -271,7 +270,7 @@ impl VitsModel {
             }
         };
         let speaker_map = reversed_mapping(&config.speaker_id_map);
-        
+
         Ok(Self {
             synth_config: RwLock::new(synth_config),
             config,
@@ -301,19 +300,13 @@ impl VitsModel {
         let timer = std::time::Instant::now();
         let outputs = {
             let mut inputs = vec![
-                ort::SessionInputValue::from(
-                    Value::from_array(phoneme_inputs).unwrap()
-                ),
-                ort::SessionInputValue::from(
-                    Value::from_array(input_lengths).unwrap()
-                ),
-                ort::SessionInputValue::from(
-                    Value::from_array(scales).unwrap()
-                ),
+                ort::SessionInputValue::from(Value::from_array(phoneme_inputs).unwrap()),
+                ort::SessionInputValue::from(Value::from_array(input_lengths).unwrap()),
+                ort::SessionInputValue::from(Value::from_array(scales).unwrap()),
             ];
             if let Some(sid_tensor) = speaker_id {
                 inputs.push(ort::SessionInputValue::from(
-                    Value::from_array(sid_tensor).unwrap()
+                    Value::from_array(sid_tensor).unwrap(),
                 ));
             }
             match session.run(SessionInputs::from(inputs.as_slice())) {
@@ -361,7 +354,6 @@ impl VitsModelCommons for VitsModel {
     fn get_speaker_map(&self) -> &HashMap<i64, String> {
         &self.speaker_map
     }
-
 }
 
 impl SonataModel for VitsModel {
@@ -458,14 +450,13 @@ impl VitsStreamingModel {
             }
         };
         let speaker_map = reversed_mapping(&config.speaker_id_map);
-        
+
         Ok(Self {
             synth_config: RwLock::new(synth_config),
             config,
             speaker_map,
             encoder_model,
             decoder_model,
-            
         })
     }
 
@@ -503,19 +494,13 @@ impl VitsStreamingModel {
         let session = &self.encoder_model;
         {
             let mut inputs = vec![
-                ort::SessionInputValue::from(
-                    Value::from_array(phoneme_inputs).unwrap()
-                ),
-                ort::SessionInputValue::from(
-                    Value::from_array(input_lengths).unwrap()
-                ),
-                ort::SessionInputValue::from(
-                    Value::from_array(scales).unwrap()
-                ),
+                ort::SessionInputValue::from(Value::from_array(phoneme_inputs).unwrap()),
+                ort::SessionInputValue::from(Value::from_array(input_lengths).unwrap()),
+                ort::SessionInputValue::from(Value::from_array(scales).unwrap()),
             ];
             if let Some(sid_tensor) = speaker_id {
                 inputs.push(ort::SessionInputValue::from(
-                    Value::from_array(sid_tensor).unwrap()
+                    Value::from_array(sid_tensor).unwrap(),
                 ));
             }
             match session.run(SessionInputs::from(inputs.as_slice())) {
@@ -683,21 +668,22 @@ impl EncoderOutputs {
         } else {
             Array1::<f32>::from_iter([]).into_dyn()
         };
-        Ok(Self { z, y_mask, p_duration, g })
+        Ok(Self {
+            z,
+            y_mask,
+            p_duration,
+            g,
+        })
     }
     fn infer_decoder(&self, session: &ort::Session) -> SonataResult<AudioSamples> {
         let outputs = {
             let mut inputs = vec![
-                ort::SessionInputValue::from(
-                    Value::from_array(self.z.view()).unwrap()
-                ),
-                ort::SessionInputValue::from(
-                    Value::from_array(self.y_mask.view()).unwrap()
-                ),
+                ort::SessionInputValue::from(Value::from_array(self.z.view()).unwrap()),
+                ort::SessionInputValue::from(Value::from_array(self.y_mask.view()).unwrap()),
             ];
             if !self.g.is_empty() {
                 inputs.push(ort::SessionInputValue::from(
-                    Value::from_array(self.g.view()).unwrap()
+                    Value::from_array(self.g.view()).unwrap(),
                 ));
             }
             match session.run(SessionInputs::from(inputs.as_slice())) {
@@ -761,16 +747,12 @@ impl SpeechStreamer {
             let z_chunk = z_view.slice_axis(Axis(2), mel_index);
             let y_mask_chunk = y_mask_view.slice_axis(Axis(2), mel_index);
             let mut inputs = vec![
-                ort::SessionInputValue::from(
-                    Value::from_array(z_chunk).unwrap()
-                ),
-                ort::SessionInputValue::from(
-                    Value::from_array(y_mask_chunk).unwrap()
-                ),
+                ort::SessionInputValue::from(Value::from_array(z_chunk).unwrap()),
+                ort::SessionInputValue::from(Value::from_array(y_mask_chunk).unwrap()),
             ];
             if !self.encoder_outputs.g.is_empty() {
                 inputs.push(ort::SessionInputValue::from(
-                    Value::from_array(self.encoder_outputs.g.view()).unwrap()
+                    Value::from_array(self.encoder_outputs.g.view()).unwrap(),
                 ));
             }
             let outputs = session
@@ -827,7 +809,7 @@ struct AdaptiveMelChunker {
     chunk_size: usize,
     chunk_padding: isize,
     last_end_index: Option<isize>,
-    step: usize
+    step: usize,
 }
 
 impl AdaptiveMelChunker {
@@ -837,7 +819,7 @@ impl AdaptiveMelChunker {
             chunk_size: chunk_size as usize,
             chunk_padding,
             last_end_index: Some(0),
-            step: 1
+            step: 1,
         }
     }
     fn consume(&mut self) {

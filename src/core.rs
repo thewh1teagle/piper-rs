@@ -3,18 +3,12 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 
-
-pub use crate::audio_ops::{
-    Audio,
-    AudioInfo,
-    AudioSamples,
-    WaveWriterError
-};
-
+pub use crate::audio_ops::{Audio, AudioInfo, AudioSamples, WaveWriterError};
 
 pub type SonataResult<T> = Result<T, SonataError>;
 pub type SonataAudioResult = SonataResult<Audio>;
-pub type AudioStreamIterator<'a> = Box<dyn Iterator<Item = SonataResult<AudioSamples>> + Send + Sync + 'a>;
+pub type AudioStreamIterator<'a> =
+    Box<dyn Iterator<Item = SonataResult<AudioSamples>> + Send + Sync + 'a>;
 
 #[derive(Debug)]
 pub enum SonataError {
@@ -78,7 +72,6 @@ impl std::string::ToString for Phonemes {
     }
 }
 
-
 pub trait SonataModel {
     fn audio_output_info(&self) -> SonataResult<AudioInfo>;
     fn phonemize_text(&self, text: &str) -> SonataResult<Phonemes>;
@@ -125,8 +118,7 @@ pub trait SonataModel {
         #[allow(unused_variables)] chunk_padding: usize,
     ) -> SonataResult<AudioStreamIterator> {
         Err(SonataError::OperationError(
-                "Streaming synthesis is not supported for this model".to_string(),
-            ))
+            "Streaming synthesis is not supported for this model".to_string(),
+        ))
     }
 }
-
