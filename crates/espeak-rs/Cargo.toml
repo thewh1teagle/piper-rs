@@ -1,0 +1,18 @@
+[package]
+name = "espeak-rs"
+version = "0.1.0"
+license = "MIT"
+authors = ["Eitan Isaacson <eitan@monotonous.org>"]
+description = "eSpeak NG playback library"
+keywords = ["espeak-ng", "audio", "tts", "speech", "rodio"]
+repository = "https://github.com/eeejay/espeaker"
+edition = "2021"
+
+[dependencies]
+espeak-rs-sys = {path = "sys", version = "0.1.0"}
+rodio = "0.19.0"
+lazy_static = "1.4.0"
+readonly = "0.2"
+ffi-support = "0.4.4"
+once_cell = "1.18.0"
+regex = "1.9.3"

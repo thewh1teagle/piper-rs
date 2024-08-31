@@ -1,0 +1,22 @@
+[package]
+name = "espeak-rs-sys"
+version = "0.1.0"
+edition = "2021"
+
+include = [
+    "espeak-ng/CMakeLists.txt",
+    "espeak-ng/cmake",
+    "espeak-ng/src",
+    "src/*.rs",
+    "build.rs",
+    "wrapper.h",
+]
+
+[build-dependencies]
+bindgen = "0.69.4"
+cmake = "0.1"
+glob = "0.3.1"
+
+[features]
+default = []
+
