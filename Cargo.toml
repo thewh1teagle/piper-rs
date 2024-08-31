@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-espeak-rs = { path = "crates/espeak-rs" }
-sonic-sys = {path = "crates/sonic-sys"}
+espeak-rs = { path = "crates/espeak-rs", version = "0.1.0" }
+sonic-sys = { path = "crates/sonic-sys", version = "0.1.0" }
 ndarray = "0.16.1"
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0.89"
-ort = {version = "2.0.0-rc.1"}
+ort = { version = "2.0.0-rc.1" }
 once_cell = "1.18.0"
 riff-wave = "0.1.3"
 flume = { version = "0.11.0", default-features = false, features = ["async"] }
@@ -18,4 +18,3 @@ rayon = { version = "1.8.1" }
 [dev-dependencies]
 ort = "=2.0.0-rc.5"
 rodio = "0.19.0"
-

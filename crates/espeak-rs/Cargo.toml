@@ -9,7 +9,7 @@ repository = "https://github.com/eeejay/espeaker"
 edition = "2021"
 
 [dependencies]
-espeak-rs-sys = {path = "sys", version = "0.1.0"}
+espeak-rs-sys = { path = "sys", version = "0.1.0" }
 rodio = "0.19.0"
 lazy_static = "1.4.0"
 readonly = "0.2"
