@@ -2,3 +2,4 @@
 *.onnx
 *.json
 *.wav
+*.tar.bz2

@@ -161,7 +161,7 @@ fn main() {
     let profile = env::var("ESPEAK_LIB_PROFILE").unwrap_or("Release".to_string());
     let static_crt = env::var("ESPEAK_STATIC_CRT")
         .map(|v| v == "1")
-        .unwrap_or(true);
+        .unwrap_or(false);
 
     debug_log!("TARGET: {}", target);
     debug_log!("CARGO_MANIFEST_DIR: {}", manifest_dir);
@@ -216,8 +216,6 @@ fn main() {
     if cfg!(windows) {
         config.static_crt(static_crt);
     }
-
-
   
     // General
     config
@@ -233,6 +231,11 @@ fn main() {
     println!("cargo:rustc-link-search={}", out_dir.join("build/src/speechPlayer").display());
     println!("cargo:rustc-link-search={}", out_dir.join("build/src/ucd-tools").display());
     println!("cargo:rustc-link-search={}", bindings_dir.display());
+
+    if cfg!(windows) {
+        println!("cargo:rustc-link-search={}", out_dir.join("build/src/speechPlayer/Release").display());
+        println!("cargo:rustc-link-search={}", out_dir.join("build/src/ucd-tools/Release").display());
+    }
 
     // Link libraries
     let espeak_libs_kind = if build_shared_libs { "dylib" } else { "static" };
