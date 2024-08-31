@@ -7,9 +7,16 @@ include = [
     "espeak-ng/CMakeLists.txt",
     "espeak-ng/cmake",
     "espeak-ng/src",
+    "espeak-ng/dictsource",
+    "espeak-ng/espeak-ng.pc.in",
+    "espeak-ng/vim",
+    "espeak-ng/phsource",
+    "espeak-ng/tests",
     "src/*.rs",
     "build.rs",
     "wrapper.h",
+    "espeak-ng-data",
+
 ]
 
 [build-dependencies]

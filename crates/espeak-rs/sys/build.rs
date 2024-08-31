@@ -151,6 +151,8 @@ fn main() {
 
     let target_dir = get_cargo_target_dir().unwrap();
     let espeak_dst = out_dir.join("espeak-ng");
+    let espeak_data_src = out_dir.join("build/espeak-ng-data");
+    let espeak_data_dst = out_dir.join("espeak-ng-data");
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("Failed to get CARGO_MANIFEST_DIR");
     let espeak_src = Path::new(&manifest_dir).join("espeak-ng");
     let build_shared_libs = false;
@@ -188,6 +190,7 @@ fn main() {
         .header("wrapper.h")
         .clang_arg(format!("-I{}", espeak_dst.display()))
         .clang_arg(format!("-I{}", espeak_dst.join("src").join("include").display()))
+        
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Failed to generate bindings");
@@ -197,11 +200,12 @@ fn main() {
     bindings
         .write_to_file(bindings_path)
         .expect("Failed to write bindings");
-
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rerun-if-changed=./espeak-ng");
 
     debug_log!("Bindings Created");
+
+
 
     // Build with Cmake
 
@@ -225,9 +229,9 @@ fn main() {
 
     let bindings_dir = config.build();
 
+
     // Search paths
     println!("cargo:rustc-link-search={}", out_dir.join("lib").display());
-    debug_log!("here {}", out_dir.join("build/src/speechPlayer").display());
     println!("cargo:rustc-link-search={}", out_dir.join("build/src/speechPlayer").display());
     println!("cargo:rustc-link-search={}", out_dir.join("build/src/ucd-tools").display());
     println!("cargo:rustc-link-search={}", bindings_dir.display());
@@ -310,4 +314,14 @@ fn main() {
             }
         }
     }
+
+    // Prepare espeak-ng-data
+    // Used for publish
+    if !espeak_data_dst.exists() {
+        debug_log!("Copy {} to {}", espeak_data_src.display(), espeak_data_dst.display());
+        copy_folder(&espeak_data_src, &espeak_data_dst);
+    }
+
+
+
 }

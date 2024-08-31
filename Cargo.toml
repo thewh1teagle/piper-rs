@@ -1,3 +1,7 @@
+[workspace]
+members = ["crates/sonic-rs-sys", "crates/espeak-rs"]
+resolver = "1"
+
 [package]
 name = "piper-rs"
 version = "0.1.0"
