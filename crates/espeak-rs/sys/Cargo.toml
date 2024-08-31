@@ -15,8 +15,6 @@ include = [
     "src/*.rs",
     "build.rs",
     "wrapper.h",
-    "espeak-ng-data",
-
 ]
 
 [build-dependencies]
