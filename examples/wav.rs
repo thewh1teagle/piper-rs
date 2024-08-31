@@ -1,12 +1,7 @@
 /*
-git clone --recursive https://github.com/mush42/sonata
-cd sonata
-
+git submodule update --init
 wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx
 wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx.json
-wget https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/espeak-ng-data.tar.bz2
-tar xf espeak-ng-data.tar.bz2
-export ESPEAK_DATA_PATH=$(pwd)/espeak-ng-data
 
 cargo run --example wav en_US-hfc_female-medium.onnx.json output.wav
 */
