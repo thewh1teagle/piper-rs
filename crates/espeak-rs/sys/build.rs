@@ -152,7 +152,7 @@ fn main() {
     let target_dir = get_cargo_target_dir().unwrap();
     let espeak_dst = out_dir.join("espeak-ng");
     let espeak_data_src = out_dir.join("build/espeak-ng-data");
-    let espeak_data_dst = out_dir.join("espeak-ng-data");
+    let espeak_data_dst = out_dir.join("espeak-ng/espeak-ng-data");
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("Failed to get CARGO_MANIFEST_DIR");
     let espeak_src = Path::new(&manifest_dir).join("espeak-ng");
     let build_shared_libs = false;
@@ -315,13 +315,7 @@ fn main() {
         }
     }
 
-    // Prepare espeak-ng-data
-    // Used for publish
-    if !espeak_data_dst.exists() {
-        debug_log!("Copy {} to {}", espeak_data_src.display(), espeak_data_dst.display());
-        copy_folder(&espeak_data_src, &espeak_data_dst);
-    }
-
-
-
+    // Prepare espeak-ng-data which used for packaging
+    debug_log!("Copy {} to {}", espeak_data_src.display(), espeak_data_dst.display());
+    copy_folder(&espeak_data_src, &espeak_data_dst);
 }
