@@ -9,7 +9,6 @@ keywords = ["FFI", "sonic", "audio", "tts", "speech"]
 categories = ["external-ffi-bindings", "api-bindings"]
 repository = "https://github.com/thewh1teagle/piper-rs"
 homepage = "https://github.com/thewh1teagle/piper-rs"
-readme = "README.md"
 
 include = [
     "sonic/*.c",
