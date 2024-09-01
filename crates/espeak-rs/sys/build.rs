@@ -151,8 +151,6 @@ fn main() {
 
     let target_dir = get_cargo_target_dir().unwrap();
     let espeak_dst = out_dir.join("espeak-ng");
-    let espeak_data_src = out_dir.join("build/espeak-ng-data");
-    let espeak_data_dst = out_dir.join("espeak-ng/espeak-ng-data");
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("Failed to get CARGO_MANIFEST_DIR");
     let espeak_src = Path::new(&manifest_dir).join("espeak-ng");
     let build_shared_libs = false;
