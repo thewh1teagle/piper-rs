@@ -6,6 +6,8 @@ resolver = "1"
 name = "piper-rs"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Use vits model based on piper in Rust"
 
 [dependencies]
 espeak-rs = { path = "crates/espeak-rs", version = "0.1.0" }
