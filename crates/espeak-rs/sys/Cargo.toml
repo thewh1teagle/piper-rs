@@ -2,6 +2,8 @@
 name = "espeak-rs-sys"
 version = "0.1.0"
 edition = "2021"
+description = "Rust bindings to espeak-ng"
+license = "MIT"
 
 include = [
     "espeak-ng/CMakeLists.txt",
