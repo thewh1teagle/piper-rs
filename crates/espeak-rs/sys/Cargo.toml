@@ -5,17 +5,21 @@ edition = "2021"
 
 include = [
     "espeak-ng/CMakeLists.txt",
-    "espeak-ng/cmake",
-    "espeak-ng/src",
-    "espeak-ng/dictsource",
+    "espeak-ng/vim/",
+    "espeak-ng/cmake/",
+    "espeak-ng/phsource/",
+    "espeak-ng/tests/",
+    "espeak-ng/src/",
+    "espeak-ng/espeak-ng-data/",
+    "espeak-ng/dictsource/**",
     "espeak-ng/espeak-ng.pc.in",
-    "espeak-ng/vim",
-    "espeak-ng/phsource",
-    "espeak-ng/tests",
-    "espeak-ng-data/",
     "src/*.rs",
     "build.rs",
     "wrapper.h",
+    # Omit too big files from dictsource
+    "!espeak-ng/dictsource/extra/**",
+    "!espeak-ng/dictsource/fo_list",
+    "!espeak-ng/src/windows/Debug/*.wav",
 ]
 
 [build-dependencies]

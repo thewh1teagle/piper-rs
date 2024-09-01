@@ -314,8 +314,4 @@ fn main() {
             }
         }
     }
-
-    // Prepare espeak-ng-data which used for packaging
-    debug_log!("Copy {} to {}", espeak_data_src.display(), espeak_data_dst.display());
-    copy_folder(&espeak_data_src, &espeak_data_dst);
 }

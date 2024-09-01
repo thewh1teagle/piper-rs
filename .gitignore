@@ -3,3 +3,4 @@
 *.json
 *.wav
 *.tar.bz2
+.DS_Store
