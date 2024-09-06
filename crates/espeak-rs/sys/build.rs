@@ -218,6 +218,10 @@ fn main() {
     if cfg!(windows) {
         config.static_crt(static_crt);
     }
+
+    if cfg!(target_os = "macos") {
+        config.define("USE_LIBPCAUDIO", "OFF");
+    }
   
     // General
     config
@@ -237,6 +241,13 @@ fn main() {
     if cfg!(windows) {
         println!("cargo:rustc-link-search={}", out_dir.join("build/src/speechPlayer/Release").display());
         println!("cargo:rustc-link-search={}", out_dir.join("build/src/ucd-tools/Release").display());
+    }
+
+
+    // macOS
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=framework=Foundation");
+        println!("cargo:rustc-link-lib=c++");
     }
 
     // Link libraries
@@ -259,11 +270,6 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=msvcrtd");
     }
 
-    // macOS
-    if cfg!(target_os = "macos") {
-        println!("cargo:rustc-link-lib=framework=Foundation");
-        println!("cargo:rustc-link-lib=c++");
-    }
 
     // Linux
     if cfg!(target_os = "linux") {
