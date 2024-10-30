@@ -20,7 +20,7 @@ fn init_ort_environment() {
 fn main() {
     init_ort_environment();
     let config_path = std::env::args().nth(1).expect("Please specify config path");
-    let text = "Hello! i'm playing audio from memory directly.".to_string();
+    let text = "Hello! i'm playing audio from memory directly with piper-rs.".to_string();
 
     let voice = piper_rs::from_config_path(Path::new(&config_path)).unwrap();
     let synth = SonataSpeechSynthesizer::new(voice).unwrap();

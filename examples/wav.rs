@@ -20,7 +20,7 @@ fn main() {
     init_ort_environment();
     let config_path = std::env::args().nth(1).expect("Please specify config path");
     let output_path = std::env::args().nth(2).expect("Please specify output path");
-    let text = "Hello! this is example with sonata".to_string();
+    let text = "Hello! this is example with piper-rs".to_string();
     let voice = piper_rs::from_config_path(Path::new(&config_path)).unwrap();
     let synth = SonataSpeechSynthesizer::new(voice).unwrap();
     synth
