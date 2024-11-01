@@ -4,3 +4,4 @@
 *.wav
 *.tar.bz2
 .DS_Store
+!.vscode/*

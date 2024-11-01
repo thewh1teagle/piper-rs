@@ -187,8 +187,10 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .clang_arg(format!("-I{}", espeak_dst.display()))
-        .clang_arg(format!("-I{}", espeak_dst.join("src").join("include").display()))
-        
+        .clang_arg(format!(
+            "-I{}",
+            espeak_dst.join("src").join("include").display()
+        ))
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Failed to generate bindings");
@@ -203,17 +205,14 @@ fn main() {
 
     debug_log!("Bindings Created");
 
-
-
     // Build with Cmake
 
     let mut config = Config::new(&espeak_dst);
 
-    config
-        .define(
-            "BUILD_SHARED_LIBS",
-            if build_shared_libs { "ON" } else { "OFF" },
-        );
+    config.define(
+        "BUILD_SHARED_LIBS",
+        if build_shared_libs { "ON" } else { "OFF" },
+    );
 
     if cfg!(windows) {
         config.static_crt(static_crt);
@@ -222,7 +221,7 @@ fn main() {
     if cfg!(target_os = "macos") {
         config.define("USE_LIBPCAUDIO", "OFF");
     }
-  
+
     // General
     config
         .profile(&profile)
@@ -231,18 +230,28 @@ fn main() {
 
     let bindings_dir = config.build();
 
-
     // Search paths
     println!("cargo:rustc-link-search={}", out_dir.join("lib").display());
-    println!("cargo:rustc-link-search={}", out_dir.join("build/src/speechPlayer").display());
-    println!("cargo:rustc-link-search={}", out_dir.join("build/src/ucd-tools").display());
+    println!(
+        "cargo:rustc-link-search={}",
+        out_dir.join("build/src/speechPlayer").display()
+    );
+    println!(
+        "cargo:rustc-link-search={}",
+        out_dir.join("build/src/ucd-tools").display()
+    );
     println!("cargo:rustc-link-search={}", bindings_dir.display());
 
     if cfg!(windows) {
-        println!("cargo:rustc-link-search={}", out_dir.join("build/src/speechPlayer/Release").display());
-        println!("cargo:rustc-link-search={}", out_dir.join("build/src/ucd-tools/Release").display());
+        println!(
+            "cargo:rustc-link-search={}",
+            out_dir.join("build/src/speechPlayer/Release").display()
+        );
+        println!(
+            "cargo:rustc-link-search={}",
+            out_dir.join("build/src/ucd-tools/Release").display()
+        );
     }
-
 
     // macOS
     if cfg!(target_os = "macos") {
@@ -269,7 +278,6 @@ fn main() {
     if cfg!(all(debug_assertions, windows)) {
         println!("cargo:rustc-link-lib=dylib=msvcrtd");
     }
-
 
     // Linux
     if cfg!(target_os = "linux") {
@@ -299,7 +307,6 @@ fn main() {
             if !dst.exists() {
                 std::fs::hard_link(asset.clone(), dst).unwrap();
             }
-            
 
             // Copy DLLs to examples as well
             if target_dir.join("examples").exists() {

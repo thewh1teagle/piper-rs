@@ -1,9 +1,18 @@
 /*
 git submodule update --init
+
+Female:
 wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx
 wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx.json
-
 cargo run --example usage en_US-hfc_female-medium.onnx.json
+
+Male:
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/hfc_male/medium/en_US-hfc_male-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/hfc_male/medium/en_US-hfc_male-medium.onnx.json
+cargo run --example usage en_US-hfc_male-medium.onnx.json
+
+See full list of TTS models at:
+https://huggingface.co/rhasspy/piper-voices/tree/main
 */
 
 use piper_rs::synth::SonataSpeechSynthesizer;
@@ -32,9 +41,9 @@ fn main() {
 
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();
+    sink.set_volume(4.0);
 
     let buf = SamplesBuffer::new(1, 22050, samples);
     sink.append(buf);
-
     sink.sleep_until_end();
 }
