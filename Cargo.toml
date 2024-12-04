@@ -4,7 +4,7 @@ resolver = "1"
 
 [package]
 name = "piper-rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 description = "Use vits model based on piper in Rust"
