@@ -9,15 +9,7 @@ cargo run --example wav en_US-hfc_female-medium.onnx.json output.wav
 use piper_rs::synth::SonataSpeechSynthesizer;
 use std::path::Path;
 
-fn init_ort_environment() {
-    ort::init()
-        .with_name("piper-rs")
-        .commit()
-        .expect("Failed to initialize onnxruntime");
-}
-
 fn main() {
-    init_ort_environment();
     let config_path = std::env::args().nth(1).expect("Please specify config path");
     let output_path = std::env::args().nth(2).expect("Please specify output path");
     let text = "Hello! this is example with piper-rs".to_string();

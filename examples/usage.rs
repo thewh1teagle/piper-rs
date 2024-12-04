@@ -10,15 +10,7 @@ use piper_rs::synth::SonataSpeechSynthesizer;
 use rodio::buffer::SamplesBuffer;
 use std::path::Path;
 
-fn init_ort_environment() {
-    ort::init()
-        .with_name("piper-rs")
-        .commit()
-        .expect("Failed to initialize onnxruntime");
-}
-
 fn main() {
-    init_ort_environment();
     let config_path = std::env::args().nth(1).expect("Please specify config path");
     let text = "Hello! i'm playing audio from memory directly with piper-rs.".to_string();
 
