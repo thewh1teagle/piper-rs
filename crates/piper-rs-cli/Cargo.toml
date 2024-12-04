@@ -1,0 +1,10 @@
+[package]
+name = "piper-rs-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+piper-rs = { path = "../../", version = "0.1.1" }
+clap = { version = "4.5.22", features = ["derive"] }
+eyre = "0.6.12"
+rodio = "0.20.1"

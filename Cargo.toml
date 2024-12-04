@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/sonic-rs-sys", "crates/espeak-rs"]
+members = ["crates/sonic-rs-sys", "crates/espeak-rs", "crates/piper-rs-cli"]
 resolver = "1"
 
 [package]
