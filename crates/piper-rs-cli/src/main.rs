@@ -25,7 +25,7 @@ struct Args {
     /// Wav file path to create
     /// Optional, it will play it directly if not provided.
     #[arg(short, long)]
-    out_path: Option<String>,
+    out: Option<String>,
 
     /// Path to Model
     #[arg(short, long)]
@@ -44,10 +44,11 @@ fn main() -> Result<()> {
     let voice = piper_rs::from_config_path(Path::new(&args.config)).unwrap();
     let synth = SonataSpeechSynthesizer::new(voice).unwrap();
 
-    if let Some(path) = args.out_path {
+    if let Some(path) = args.out {
         // Save to file
         synth
-            .synthesize_to_file(&PathBuf::from(path), args.text, None)?;
+            .synthesize_to_file(&PathBuf::from(&path), args.text, None)?;
+        println!("Created {}", path);
     } else {
         // Play directly in memory
         let audio = synth.synthesize_parallel(args.text, None).unwrap();
@@ -62,6 +63,7 @@ fn main() -> Result<()> {
         let buf = SamplesBuffer::new(1, 22050, samples);
         sink.append(buf);
     
+        println!("Playing...");
         sink.sleep_until_end();
     }
     Ok(())
