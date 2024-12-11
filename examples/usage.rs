@@ -8,7 +8,7 @@ wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/libritts_
 cargo run --example usage en_US-libritts_r-medium.onnx.json 80
 */
 
-use piper_rs::synth::SonataSpeechSynthesizer;
+use piper_rs::synth::PiperSpeechSynthesizer;
 use rodio::buffer::SamplesBuffer;
 use std::path::Path;
 
@@ -23,7 +23,7 @@ fn main() {
         let sid = sid.parse::<i64>().expect("Speaker ID should be number!");
         model.set_speaker(sid);
     }
-    let synth = SonataSpeechSynthesizer::new(model).unwrap();
+    let synth = PiperSpeechSynthesizer::new(model).unwrap();
     let mut samples: Vec<f32> = Vec::new();
     let audio = synth.synthesize_parallel(text, None).unwrap();
     for result in audio {

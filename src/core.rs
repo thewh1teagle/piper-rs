@@ -5,41 +5,41 @@ use std::fmt;
 
 pub use crate::audio_ops::{Audio, AudioInfo, AudioSamples, WaveWriterError};
 
-pub type SonataResult<T> = Result<T, SonataError>;
-pub type SonataAudioResult = SonataResult<Audio>;
+pub type PiperResult<T> = Result<T, PiperError>;
+pub type PiperAudioResult = PiperResult<Audio>;
 pub type AudioStreamIterator<'a> =
-    Box<dyn Iterator<Item = SonataResult<AudioSamples>> + Send + Sync + 'a>;
+    Box<dyn Iterator<Item = PiperResult<AudioSamples>> + Send + Sync + 'a>;
 
 #[derive(Debug)]
-pub enum SonataError {
+pub enum PiperError {
     FailedToLoadResource(String),
     PhonemizationError(String),
     OperationError(String),
 }
 
-impl SonataError {
+impl PiperError {
     pub fn with_message(message: impl Into<String>) -> Self {
         Self::OperationError(message.into())
     }
 }
-impl Error for SonataError {}
+impl Error for PiperError {}
 
-impl fmt::Display for SonataError {
+impl fmt::Display for PiperError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err_message = match self {
-            SonataError::FailedToLoadResource(msg) => {
+            PiperError::FailedToLoadResource(msg) => {
                 format!("Failed to load resource from. Error `{}`", msg)
             }
-            SonataError::PhonemizationError(msg) => msg.to_string(),
-            SonataError::OperationError(msg) => msg.to_string(),
+            PiperError::PhonemizationError(msg) => msg.to_string(),
+            PiperError::OperationError(msg) => msg.to_string(),
         };
         write!(f, "{}", err_message)
     }
 }
 
-impl From<WaveWriterError> for SonataError {
+impl From<WaveWriterError> for PiperError {
     fn from(error: WaveWriterError) -> Self {
-        SonataError::OperationError(error.to_string())
+        PiperError::OperationError(error.to_string())
     }
 }
 
@@ -73,30 +73,30 @@ impl std::string::ToString for Phonemes {
     }
 }
 
-pub trait SonataModel {
-    fn audio_output_info(&self) -> SonataResult<AudioInfo>;
-    fn phonemize_text(&self, text: &str) -> SonataResult<Phonemes>;
-    fn speak_batch(&self, phoneme_batches: Vec<String>) -> SonataResult<Vec<Audio>>;
-    fn speak_one_sentence(&self, phonemes: String) -> SonataAudioResult;
+pub trait PiperModel {
+    fn audio_output_info(&self) -> PiperResult<AudioInfo>;
+    fn phonemize_text(&self, text: &str) -> PiperResult<Phonemes>;
+    fn speak_batch(&self, phoneme_batches: Vec<String>) -> PiperResult<Vec<Audio>>;
+    fn speak_one_sentence(&self, phonemes: String) -> PiperAudioResult;
 
-    fn get_default_synthesis_config(&self) -> SonataResult<Box<dyn Any>>;
-    fn get_fallback_synthesis_config(&self) -> SonataResult<Box<dyn Any>>;
-    fn set_fallback_synthesis_config(&self, synthesis_config: &dyn Any) -> SonataResult<()>;
+    fn get_default_synthesis_config(&self) -> PiperResult<Box<dyn Any>>;
+    fn get_fallback_synthesis_config(&self) -> PiperResult<Box<dyn Any>>;
+    fn set_fallback_synthesis_config(&self, synthesis_config: &dyn Any) -> PiperResult<()>;
 
-    fn get_language(&self) -> SonataResult<Option<String>> {
+    fn get_language(&self) -> PiperResult<Option<String>> {
         Ok(None)
     }
-    fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
+    fn get_speakers(&self) -> PiperResult<Option<&HashMap<i64, String>>> {
         Ok(None)
     }
-    fn set_speaker(&self, sid: i64) -> Option<SonataError>;
-    fn speaker_id_to_name(&self, sid: i64) -> SonataResult<Option<String>> {
+    fn set_speaker(&self, sid: i64) -> Option<PiperError>;
+    fn speaker_id_to_name(&self, sid: i64) -> PiperResult<Option<String>> {
         Ok(self
             .get_speakers()?
             .and_then(|speakers| speakers.get(&sid))
             .cloned())
     }
-    fn speaker_name_to_id(&self, name: &str) -> SonataResult<Option<i64>> {
+    fn speaker_name_to_id(&self, name: &str) -> PiperResult<Option<i64>> {
         Ok(self.get_speakers()?.and_then(|speakers| {
             for (sid, sname) in speakers {
                 if sname == name {
@@ -106,7 +106,7 @@ pub trait SonataModel {
             None
         }))
     }
-    fn properties(&self) -> SonataResult<HashMap<String, String>> {
+    fn properties(&self) -> PiperResult<HashMap<String, String>> {
         Ok(HashMap::with_capacity(0))
     }
 
@@ -118,8 +118,8 @@ pub trait SonataModel {
         #[allow(unused_variables)] phonemes: String,
         #[allow(unused_variables)] chunk_size: usize,
         #[allow(unused_variables)] chunk_padding: usize,
-    ) -> SonataResult<AudioStreamIterator> {
-        Err(SonataError::OperationError(
+    ) -> PiperResult<AudioStreamIterator> {
+        Err(PiperError::OperationError(
             "Streaming synthesis is not supported for this model".to_string(),
         ))
     }
