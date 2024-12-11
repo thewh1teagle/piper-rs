@@ -2,7 +2,13 @@
 
 [![Crates](https://img.shields.io/crates/v/piper-rs?logo=rust&color=F07B3C)](https://crates.io/crates/piper-rs/)
 
-Use [Vits](https://github.com/jaywalnut310/vits/) models based on [Piper](https://github.com/rhasspy/piper) in Rust.
+Use [Piper](https://github.com/rhasspy/piper) TTS models in Rust.
+
+## Features
+
+-  Compatibility with all Piper TTS models
+-  Support for multiple languages
+-  High performance with pure Rust implementation
 
 ## Install
 
@@ -13,6 +19,10 @@ cargo add piper-rs
 ## Examples
 
 See [examples](examples)
+
+## Models
+
+All pretrained models available at [huggingface.co/rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices/tree/main)
 
 ## Credits
 
