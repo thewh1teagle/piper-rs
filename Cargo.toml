@@ -4,10 +4,11 @@ resolver = "1"
 
 [package]
 name = "piper-rs"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MIT"
 description = "Use piper TTS models in Rust"
+repository = "https://github.com/thewh1teagle/piper-rs"
 
 [dependencies]
 espeak-rs = { path = "crates/espeak-rs", version = "0.1.2" }
