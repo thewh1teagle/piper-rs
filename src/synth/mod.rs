@@ -242,6 +242,9 @@ impl SonataModel for SonataSpeechSynthesizer {
     fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
         self.0.get_speakers()
     }
+    fn set_speaker(&self, sid: i64) -> Option<SonataError> {
+        self.0.set_speaker(sid)
+    }
     fn properties(&self) -> SonataResult<HashMap<String, String>> {
         self.0.properties()
     }
