@@ -6,6 +6,6 @@ Use [Vits](https://github.com/jaywalnut310/vits/) models based on [Piper](https:
 
 See [examples](examples)
 
-## Acknowledgements
+## Credits
 
 This project is inspired by [sonata](https://github.com/mush42/sonata), originally created by [mush42](https://github.com/mush42).
