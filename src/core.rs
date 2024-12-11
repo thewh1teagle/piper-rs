@@ -89,6 +89,7 @@ pub trait SonataModel {
     fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
         Ok(None)
     }
+    fn set_speaker(&self, sid: &i64) -> Option<SonataError>;
     fn speaker_id_to_name(&self, sid: &i64) -> SonataResult<Option<String>> {
         Ok(self
             .get_speakers()?

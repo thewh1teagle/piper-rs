@@ -164,6 +164,19 @@ trait VitsModelCommons {
         let eos_id = *config.phoneme_id_map.get(&EOS).unwrap().first().unwrap();
         (pad_id, bos_id, eos_id)
     }
+    fn set_speaker(&self, sid: &i64) -> Option<SonataError> {
+        let mut synth_config = self.get_synth_config().write().unwrap();
+
+        if self.get_speaker_map().contains_key(sid) {
+            synth_config.speaker = Some(*sid);
+            None // No error
+        } else {
+            Some(SonataError::OperationError(format!(
+                "Invalid speaker id `{}`",
+                sid
+            )))
+        }
+    }
     fn language(&self) -> Option<String> {
         self.get_config()
             .language
@@ -406,6 +419,9 @@ impl SonataModel for VitsModel {
     fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
         Ok(Some(self.get_speaker_map()))
     }
+    fn set_speaker(&self, sid: &i64) -> Option<SonataError> {
+        VitsModelCommons::set_speaker(self, sid)
+    }
     fn speaker_name_to_id(&self, name: &str) -> SonataResult<Option<i64>> {
         Ok(self.config.speaker_id_map.get(name).copied())
     }
@@ -574,6 +590,9 @@ impl SonataModel for VitsStreamingModel {
     }
     fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
         Ok(Some(self.get_speaker_map()))
+    }
+    fn set_speaker(&self, sid: &i64) -> Option<SonataError> {
+        VitsModelCommons::set_speaker(self, sid)
     }
     fn speaker_name_to_id(&self, name: &str) -> SonataResult<Option<i64>> {
         Ok(self.config.speaker_id_map.get(name).copied())
