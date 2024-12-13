@@ -8,7 +8,7 @@ piper-rs-cli en_US-hfc_female-medium.onnx.json "Hello from piper-rs-cli!"
 
 use clap::Parser;
 use eyre::{bail, Result};
-use piper_rs::synth::SonataSpeechSynthesizer;
+use piper_rs::synth::PiperSpeechSynthesizer;
 use rodio::buffer::SamplesBuffer;
 use std::path::{Path, PathBuf};
 
@@ -30,6 +30,10 @@ struct Args {
     /// Path to Model
     #[arg(short, long)]
     model: Option<String>,
+
+    /// Path to Model
+    #[arg(long)]
+    speaker_id: Option<i64>,
 }
 
 fn main() -> Result<()> {
@@ -41,8 +45,12 @@ fn main() -> Result<()> {
     if !model.exists() {
         bail!("Model not found at {}", model.display())
     }
-    let voice = piper_rs::from_config_path(Path::new(&args.config)).unwrap();
-    let synth = SonataSpeechSynthesizer::new(voice).unwrap();
+    let model = piper_rs::from_config_path(Path::new(&args.config)).unwrap();
+    if let Some(sid) = args.speaker_id {
+        model.set_speaker(sid);
+    }
+    let synth = PiperSpeechSynthesizer::new(model).unwrap();
+
 
     if let Some(path) = args.out {
         // Save to file
