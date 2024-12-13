@@ -9,8 +9,8 @@ mod audio_ops;
 mod core;
 pub mod synth;
 use core::{
-    Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, SonataAudioResult, SonataError,
-    SonataModel, SonataResult,
+    Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, PiperAudioResult, PiperError,
+    PiperModel, PiperResult,
 };
 use std::any::Any;
 use std::borrow::Cow;
@@ -34,11 +34,11 @@ where
     HashMap::from_iter(input.iter().map(|(k, v)| (v.to_owned(), k.to_owned())))
 }
 
-fn load_model_config(config_path: &Path) -> SonataResult<(ModelConfig, PiperSynthesisConfig)> {
+fn load_model_config(config_path: &Path) -> PiperResult<(ModelConfig, PiperSynthesisConfig)> {
     let file = match File::open(config_path) {
         Ok(file) => file,
         Err(why) => {
-            return Err(SonataError::FailedToLoadResource(format!(
+            return Err(PiperError::FailedToLoadResource(format!(
                 "Faild to load model config: `{}`. Caused by: `{}`",
                 config_path.display(),
                 why
@@ -48,7 +48,7 @@ fn load_model_config(config_path: &Path) -> SonataResult<(ModelConfig, PiperSynt
     let model_config: ModelConfig = match serde_json::from_reader(file) {
         Ok(config) => config,
         Err(why) => {
-            return Err(SonataError::FailedToLoadResource(format!(
+            return Err(PiperError::FailedToLoadResource(format!(
                 "Faild to parse model config from file: `{}`. Caused by: `{}`",
                 config_path.display(),
                 why
@@ -73,7 +73,7 @@ fn create_inference_session(model_path: &Path) -> Result<Session, ort::Error> {
         .commit_from_file(model_path)
 }
 
-pub fn from_config_path(config_path: &Path) -> SonataResult<Arc<dyn SonataModel + Send + Sync>> {
+pub fn from_config_path(config_path: &Path) -> PiperResult<Arc<dyn PiperModel + Send + Sync>> {
     let (config, synth_config) = load_model_config(config_path)?;
     if config.streaming.unwrap_or_default() {
         Ok(Arc::new(VitsStreamingModel::from_config(
@@ -84,7 +84,7 @@ pub fn from_config_path(config_path: &Path) -> SonataResult<Arc<dyn SonataModel 
         )?))
     } else {
         let Some(onnx_filename) = config_path.file_stem() else {
-            return Err(SonataError::OperationError(format!(
+            return Err(PiperError::OperationError(format!(
                 "Invalid config filename format `{}`",
                 config_path.display()
             )));
@@ -164,6 +164,19 @@ trait VitsModelCommons {
         let eos_id = *config.phoneme_id_map.get(&EOS).unwrap().first().unwrap();
         (pad_id, bos_id, eos_id)
     }
+    fn set_speaker(&self, sid: i64) -> Option<PiperError> {
+        let mut synth_config = self.get_synth_config().write().unwrap();
+
+        if self.get_speaker_map().contains_key(&sid) {
+            synth_config.speaker = Some(sid);
+            None // No error
+        } else {
+            Some(PiperError::OperationError(format!(
+                "Invalid speaker id `{}`",
+                sid
+            )))
+        }
+    }
     fn language(&self) -> Option<String> {
         self.get_config()
             .language
@@ -182,7 +195,7 @@ trait VitsModelCommons {
         )])
     }
 
-    fn _do_set_default_synth_config(&self, new_config: &PiperSynthesisConfig) -> SonataResult<()> {
+    fn _do_set_default_synth_config(&self, new_config: &PiperSynthesisConfig) -> PiperResult<()> {
         let mut synth_config = self.get_synth_config().write().unwrap();
         synth_config.length_scale = new_config.length_scale;
         synth_config.noise_scale = new_config.noise_scale;
@@ -191,7 +204,7 @@ trait VitsModelCommons {
             if self.get_speaker_map().contains_key(&sid) {
                 synth_config.speaker = Some(sid);
             } else {
-                return Err(SonataError::OperationError(format!(
+                return Err(PiperError::OperationError(format!(
                     "No speaker was found with the given id `{}`",
                     sid
                 )));
@@ -218,13 +231,13 @@ trait VitsModelCommons {
         phoneme_ids.push(eos_id);
         phoneme_ids
     }
-    fn do_phonemize_text(&self, text: &str) -> SonataResult<Phonemes> {
+    fn do_phonemize_text(&self, text: &str) -> PiperResult<Phonemes> {
         let config = self.get_config();
         let text = Cow::from(text);
         let phonemes = match text_to_phonemes(&text, &config.espeak.voice, None, true, false) {
             Ok(ph) => ph,
             Err(e) => {
-                return Err(SonataError::PhonemizationError(format!(
+                return Err(PiperError::PhonemizationError(format!(
                     "Failed to phonemize given text using espeak-ng. Error: {}",
                     e
                 )))
@@ -233,7 +246,7 @@ trait VitsModelCommons {
         Ok(phonemes.into())
     }
 
-    fn get_audio_output_info(&self) -> SonataResult<AudioInfo> {
+    fn get_audio_output_info(&self) -> PiperResult<AudioInfo> {
         Ok(AudioInfo {
             sample_rate: self.get_config().audio.sample_rate as usize,
             num_channels: 1usize,
@@ -250,7 +263,7 @@ pub struct VitsModel {
 }
 
 impl VitsModel {
-    pub fn new(config_path: PathBuf, onnx_path: &Path) -> SonataResult<Self> {
+    pub fn new(config_path: PathBuf, onnx_path: &Path) -> PiperResult<Self> {
         match load_model_config(&config_path) {
             Ok((config, synth_config)) => Self::from_config(config, synth_config, onnx_path),
             Err(error) => Err(error),
@@ -260,11 +273,11 @@ impl VitsModel {
         config: ModelConfig,
         synth_config: PiperSynthesisConfig,
         onnx_path: &Path,
-    ) -> SonataResult<Self> {
+    ) -> PiperResult<Self> {
         let session = match create_inference_session(onnx_path) {
             Ok(session) => session,
             Err(err) => {
-                return Err(SonataError::OperationError(format!(
+                return Err(PiperError::OperationError(format!(
                     "Failed to initialize onnxruntime inference session: `{}`",
                     err
                 )))
@@ -279,7 +292,7 @@ impl VitsModel {
             session,
         })
     }
-    fn infer_with_values(&self, input_phonemes: Vec<i64>) -> SonataAudioResult {
+    fn infer_with_values(&self, input_phonemes: Vec<i64>) -> PiperAudioResult {
         let synth_config = self.synth_config.read().unwrap();
 
         let input_len = input_phonemes.len();
@@ -313,7 +326,7 @@ impl VitsModel {
             match session.run(SessionInputs::from(inputs.as_slice())) {
                 Ok(out) => out,
                 Err(e) => {
-                    return Err(SonataError::OperationError(format!(
+                    return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     )))
@@ -325,7 +338,7 @@ impl VitsModel {
         let outputs = match outputs[0].try_extract_tensor::<f32>() {
             Ok(out) => out,
             Err(e) => {
-                return Err(SonataError::OperationError(format!(
+                return Err(PiperError::OperationError(format!(
                     "Failed to run model inference. Error: {}",
                     e
                 )))
@@ -340,7 +353,7 @@ impl VitsModel {
             Some(inference_ms),
         ))
     }
-    pub fn get_input_output_info(&self) -> SonataResult<Vec<String>> {
+    pub fn get_input_output_info(&self) -> PiperResult<Vec<String>> {
         todo!()
     }
 }
@@ -357,12 +370,12 @@ impl VitsModelCommons for VitsModel {
     }
 }
 
-impl SonataModel for VitsModel {
-    fn phonemize_text(&self, text: &str) -> SonataResult<Phonemes> {
+impl PiperModel for VitsModel {
+    fn phonemize_text(&self, text: &str) -> PiperResult<Phonemes> {
         self.do_phonemize_text(text)
     }
 
-    fn speak_batch(&self, phoneme_batches: Vec<String>) -> SonataResult<Vec<Audio>> {
+    fn speak_batch(&self, phoneme_batches: Vec<String>) -> PiperResult<Vec<Audio>> {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phoneme_batches = Vec::from_iter(
             phoneme_batches
@@ -376,12 +389,12 @@ impl SonataModel for VitsModel {
         Ok(retval)
     }
 
-    fn speak_one_sentence(&self, phonemes: String) -> SonataAudioResult {
+    fn speak_one_sentence(&self, phonemes: String) -> PiperAudioResult {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phonemes = self.phonemes_to_input_ids(&phonemes, pad_id, bos_id, eos_id);
         self.infer_with_values(phonemes)
     }
-    fn get_default_synthesis_config(&self) -> SonataResult<Box<dyn Any>> {
+    fn get_default_synthesis_config(&self) -> PiperResult<Box<dyn Any>> {
         Ok(Box::new(PiperSynthesisConfig {
             speaker: Some(0),
             noise_scale: self.config.inference.noise_scale,
@@ -389,30 +402,33 @@ impl SonataModel for VitsModel {
             length_scale: self.config.inference.length_scale,
         }))
     }
-    fn get_fallback_synthesis_config(&self) -> SonataResult<Box<dyn Any>> {
+    fn get_fallback_synthesis_config(&self) -> PiperResult<Box<dyn Any>> {
         Ok(Box::new(self.synth_config.read().unwrap().clone()))
     }
-    fn set_fallback_synthesis_config(&self, synthesis_config: &dyn Any) -> SonataResult<()> {
+    fn set_fallback_synthesis_config(&self, synthesis_config: &dyn Any) -> PiperResult<()> {
         match synthesis_config.downcast_ref::<PiperSynthesisConfig>() {
             Some(new_config) => self._do_set_default_synth_config(new_config),
-            None => Err(SonataError::OperationError(
+            None => Err(PiperError::OperationError(
                 "Invalid configuration for Vits Model".to_string(),
             )),
         }
     }
-    fn get_language(&self) -> SonataResult<Option<String>> {
+    fn get_language(&self) -> PiperResult<Option<String>> {
         Ok(self.language())
     }
-    fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
+    fn get_speakers(&self) -> PiperResult<Option<&HashMap<i64, String>>> {
         Ok(Some(self.get_speaker_map()))
     }
-    fn speaker_name_to_id(&self, name: &str) -> SonataResult<Option<i64>> {
+    fn set_speaker(&self, sid: i64) -> Option<PiperError> {
+        VitsModelCommons::set_speaker(self, sid)
+    }
+    fn speaker_name_to_id(&self, name: &str) -> PiperResult<Option<i64>> {
         Ok(self.config.speaker_id_map.get(name).copied())
     }
-    fn properties(&self) -> SonataResult<HashMap<String, String>> {
+    fn properties(&self) -> PiperResult<HashMap<String, String>> {
         Ok(self.get_properties())
     }
-    fn audio_output_info(&self) -> SonataResult<AudioInfo> {
+    fn audio_output_info(&self) -> PiperResult<AudioInfo> {
         self.get_audio_output_info()
     }
 }
@@ -431,11 +447,11 @@ impl VitsStreamingModel {
         synth_config: PiperSynthesisConfig,
         encoder_path: &Path,
         decoder_path: &Path,
-    ) -> SonataResult<Self> {
+    ) -> PiperResult<Self> {
         let encoder_model = match create_inference_session(encoder_path) {
             Ok(model) => model,
             Err(err) => {
-                return Err(SonataError::OperationError(format!(
+                return Err(PiperError::OperationError(format!(
                     "Failed to initialize onnxruntime inference session: `{}`",
                     err
                 )))
@@ -444,7 +460,7 @@ impl VitsStreamingModel {
         let decoder_model = match create_inference_session(decoder_path) {
             Ok(model) => Arc::new(model),
             Err(err) => {
-                return Err(SonataError::OperationError(format!(
+                return Err(PiperError::OperationError(format!(
                     "Failed to initialize onnxruntime inference session: `{}`",
                     err
                 )))
@@ -461,7 +477,7 @@ impl VitsStreamingModel {
         })
     }
 
-    fn infer_with_values(&self, input_phonemes: Vec<i64>) -> SonataAudioResult {
+    fn infer_with_values(&self, input_phonemes: Vec<i64>) -> PiperAudioResult {
         let timer = std::time::Instant::now();
         let encoder_output = self.infer_encoder(input_phonemes)?;
         let audio = encoder_output.infer_decoder(self.decoder_model.as_ref())?;
@@ -472,7 +488,7 @@ impl VitsStreamingModel {
             Some(inference_ms),
         ))
     }
-    fn infer_encoder(&self, input_phonemes: Vec<i64>) -> SonataResult<EncoderOutputs> {
+    fn infer_encoder(&self, input_phonemes: Vec<i64>) -> PiperResult<EncoderOutputs> {
         let synth_config = self.synth_config.read().unwrap();
 
         let input_len = input_phonemes.len();
@@ -506,7 +522,7 @@ impl VitsStreamingModel {
             }
             match session.run(SessionInputs::from(inputs.as_slice())) {
                 Ok(ort_values) => EncoderOutputs::from_values(ort_values),
-                Err(e) => Err(SonataError::OperationError(format!(
+                Err(e) => Err(PiperError::OperationError(format!(
                     "Failed to run model inference. Error: {}",
                     e
                 ))),
@@ -527,12 +543,12 @@ impl VitsModelCommons for VitsStreamingModel {
     }
 }
 
-impl SonataModel for VitsStreamingModel {
-    fn phonemize_text(&self, text: &str) -> SonataResult<Phonemes> {
+impl PiperModel for VitsStreamingModel {
+    fn phonemize_text(&self, text: &str) -> PiperResult<Phonemes> {
         self.do_phonemize_text(text)
     }
 
-    fn speak_batch(&self, phoneme_batches: Vec<String>) -> SonataResult<Vec<Audio>> {
+    fn speak_batch(&self, phoneme_batches: Vec<String>) -> PiperResult<Vec<Audio>> {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phoneme_batches = Vec::from_iter(
             phoneme_batches
@@ -545,12 +561,12 @@ impl SonataModel for VitsStreamingModel {
         }
         Ok(retval)
     }
-    fn speak_one_sentence(&self, phonemes: String) -> SonataAudioResult {
+    fn speak_one_sentence(&self, phonemes: String) -> PiperAudioResult {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phonemes = self.phonemes_to_input_ids(&phonemes, pad_id, bos_id, eos_id);
         self.infer_with_values(phonemes)
     }
-    fn get_default_synthesis_config(&self) -> SonataResult<Box<dyn Any>> {
+    fn get_default_synthesis_config(&self) -> PiperResult<Box<dyn Any>> {
         Ok(Box::new(PiperSynthesisConfig {
             speaker: Some(0),
             noise_scale: self.config.inference.noise_scale,
@@ -558,30 +574,33 @@ impl SonataModel for VitsStreamingModel {
             length_scale: self.config.inference.length_scale,
         }))
     }
-    fn get_fallback_synthesis_config(&self) -> SonataResult<Box<dyn Any>> {
+    fn get_fallback_synthesis_config(&self) -> PiperResult<Box<dyn Any>> {
         Ok(Box::new(self.synth_config.read().unwrap().clone()))
     }
-    fn set_fallback_synthesis_config(&self, synthesis_config: &dyn Any) -> SonataResult<()> {
+    fn set_fallback_synthesis_config(&self, synthesis_config: &dyn Any) -> PiperResult<()> {
         match synthesis_config.downcast_ref::<PiperSynthesisConfig>() {
             Some(new_config) => self._do_set_default_synth_config(new_config),
-            None => Err(SonataError::OperationError(
+            None => Err(PiperError::OperationError(
                 "Invalid configuration for Vits Model".to_string(),
             )),
         }
     }
-    fn get_language(&self) -> SonataResult<Option<String>> {
+    fn get_language(&self) -> PiperResult<Option<String>> {
         Ok(self.language())
     }
-    fn get_speakers(&self) -> SonataResult<Option<&HashMap<i64, String>>> {
+    fn get_speakers(&self) -> PiperResult<Option<&HashMap<i64, String>>> {
         Ok(Some(self.get_speaker_map()))
     }
-    fn speaker_name_to_id(&self, name: &str) -> SonataResult<Option<i64>> {
+    fn set_speaker(&self, sid: i64) -> Option<PiperError> {
+        VitsModelCommons::set_speaker(self, sid)
+    }
+    fn speaker_name_to_id(&self, name: &str) -> PiperResult<Option<i64>> {
         Ok(self.config.speaker_id_map.get(name).copied())
     }
-    fn properties(&self) -> SonataResult<HashMap<String, String>> {
+    fn properties(&self) -> PiperResult<HashMap<String, String>> {
         Ok(self.get_properties())
     }
-    fn audio_output_info(&self) -> SonataResult<AudioInfo> {
+    fn audio_output_info(&self) -> PiperResult<AudioInfo> {
         self.get_audio_output_info()
     }
     fn supports_streaming_output(&self) -> bool {
@@ -592,7 +611,7 @@ impl SonataModel for VitsStreamingModel {
         phonemes: String,
         chunk_size: usize,
         chunk_padding: usize,
-    ) -> SonataResult<AudioStreamIterator> {
+    ) -> PiperResult<AudioStreamIterator> {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phonemes = self.phonemes_to_input_ids(&phonemes, pad_id, bos_id, eos_id);
         let encoder_outputs = self.infer_encoder(phonemes)?;
@@ -616,12 +635,12 @@ struct EncoderOutputs {
 
 impl EncoderOutputs {
     #[inline(always)]
-    fn from_values(values: SessionOutputs) -> SonataResult<Self> {
+    fn from_values(values: SessionOutputs) -> PiperResult<Self> {
         let z = {
             let z_t = match values["z"].try_extract_tensor::<f32>() {
                 Ok(out) => out,
                 Err(e) => {
-                    return Err(SonataError::OperationError(format!(
+                    return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     )))
@@ -633,7 +652,7 @@ impl EncoderOutputs {
             let y_mask_t = match values["y_mask"].try_extract_tensor::<f32>() {
                 Ok(out) => out,
                 Err(e) => {
-                    return Err(SonataError::OperationError(format!(
+                    return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     )))
@@ -645,7 +664,7 @@ impl EncoderOutputs {
             let p_duration_t = match values["p_duration"].try_extract_tensor::<f32>() {
                 Ok(out) => out,
                 Err(e) => {
-                    return Err(SonataError::OperationError(format!(
+                    return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     )))
@@ -659,7 +678,7 @@ impl EncoderOutputs {
             let g_t = match values["g"].try_extract_tensor::<f32>() {
                 Ok(out) => out,
                 Err(e) => {
-                    return Err(SonataError::OperationError(format!(
+                    return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     )))
@@ -676,7 +695,7 @@ impl EncoderOutputs {
             g,
         })
     }
-    fn infer_decoder(&self, session: &Session) -> SonataResult<AudioSamples> {
+    fn infer_decoder(&self, session: &Session) -> PiperResult<AudioSamples> {
         let outputs = {
             let mut inputs = vec![
                 SessionInputValue::from(Value::from_array(self.z.view()).unwrap()),
@@ -690,7 +709,7 @@ impl EncoderOutputs {
             match session.run(SessionInputs::from(inputs.as_slice())) {
                 Ok(out) => out,
                 Err(e) => {
-                    return Err(SonataError::OperationError(format!(
+                    return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     )))
@@ -699,7 +718,7 @@ impl EncoderOutputs {
         };
         match outputs[0].try_extract_tensor::<f32>() {
             Ok(out) => Ok(Vec::from(out.view().as_slice().unwrap()).into()),
-            Err(e) => Err(SonataError::OperationError(format!(
+            Err(e) => Err(PiperError::OperationError(format!(
                 "Failed to run model inference. Error: {}",
                 e
             ))),
@@ -739,7 +758,7 @@ impl SpeechStreamer {
         &mut self,
         mel_index: ndarray::Slice,
         audio_index: ndarray::Slice,
-    ) -> SonataResult<AudioSamples> {
+    ) -> PiperResult<AudioSamples> {
         // println!("Mel index: {:?}\nAudio Index: {:?}", mel_index, audio_index);
         let audio = {
             let session = Arc::clone(&self.decoder_model);
@@ -759,13 +778,13 @@ impl SpeechStreamer {
             let outputs = session
                 .run(SessionInputs::from(inputs.as_slice()))
                 .map_err(|e| {
-                    SonataError::OperationError(format!(
+                    PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
                     ))
                 })?;
             let audio_t = outputs[0].try_extract_tensor::<f32>().map_err(|e| {
-                SonataError::OperationError(format!("Failed to run model inference. Error: {}", e))
+                PiperError::OperationError(format!("Failed to run model inference. Error: {}", e))
             })?;
             self.process_chunk_audio(audio_t.view().view(), audio_index)?
         };
@@ -776,11 +795,11 @@ impl SpeechStreamer {
         &mut self,
         audio_view: ArrayView<f32, Dim<IxDynImpl>>,
         audio_index: ndarray::Slice,
-    ) -> SonataResult<AudioSamples> {
+    ) -> PiperResult<AudioSamples> {
         let mut audio: AudioSamples = audio_view
             .slice_axis(Axis(2), audio_index)
             .as_slice()
-            .ok_or_else(|| SonataError::with_message("Invalid model audio output"))?
+            .ok_or_else(|| PiperError::with_message("Invalid model audio output"))?
             .to_vec()
             .into();
         audio.crossfade(42);
@@ -789,7 +808,7 @@ impl SpeechStreamer {
 }
 
 impl Iterator for SpeechStreamer {
-    type Item = SonataResult<AudioSamples>;
+    type Item = PiperResult<AudioSamples>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let (mel_index, audio_index) = self.mel_chunker.next()?;

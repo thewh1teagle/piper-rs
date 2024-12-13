@@ -27,3 +27,5 @@ popd
 
 cargo publish
 ```
+
+Note: Please don't create PR from your main branch. only from new feature branch!

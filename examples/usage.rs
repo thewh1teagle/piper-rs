@@ -1,21 +1,29 @@
 /*
 git submodule update --init
-wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx
-wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx.json
 
-cargo run --example usage en_US-hfc_female-medium.onnx.json
+** You can specify speaker id in the last argumnet
+
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx
+wget https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx.json
+cargo run --example usage en_US-libritts_r-medium.onnx.json 80
 */
 
-use piper_rs::synth::SonataSpeechSynthesizer;
+use piper_rs::synth::PiperSpeechSynthesizer;
 use rodio::buffer::SamplesBuffer;
 use std::path::Path;
 
 fn main() {
     let config_path = std::env::args().nth(1).expect("Please specify config path");
     let text = "Hello! i'm playing audio from memory directly with piper-rs.".to_string();
+    let sid = std::env::args().nth(2);
 
-    let voice = piper_rs::from_config_path(Path::new(&config_path)).unwrap();
-    let synth = SonataSpeechSynthesizer::new(voice).unwrap();
+    let model = piper_rs::from_config_path(Path::new(&config_path)).unwrap();
+    // Set speaker ID
+      if let Some(sid) = sid {
+        let sid = sid.parse::<i64>().expect("Speaker ID should be number!");
+        model.set_speaker(sid);
+    }
+    let synth = PiperSpeechSynthesizer::new(model).unwrap();
     let mut samples: Vec<f32> = Vec::new();
     let audio = synth.synthesize_parallel(text, None).unwrap();
     for result in audio {
