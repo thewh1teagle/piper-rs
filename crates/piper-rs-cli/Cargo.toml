@@ -1,6 +1,6 @@
 [package]
 name = "piper-rs-cli"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["thewh1teagle"]
 license = "MIT"
@@ -11,9 +11,13 @@ repository = "https://github.com/thewh1teagle/piper-rs"
 
 
 [dependencies]
-piper-rs = { path = "../../", version = "0.1.5" }
+piper-rs = { path = "../../", version = "0.1.5", default-features = false }
 clap = { version = "4.5.22", features = ["derive"] }
 eyre = "0.6.12"
 rodio = "0.20.1"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+
+[features]
+default = []
+compile-espeak-intonations = ["piper-rs/compile-espeak-intonations"]
