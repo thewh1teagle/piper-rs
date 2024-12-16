@@ -470,7 +470,7 @@ dependencies = [
 
 [[package]]
 name = "espeak-rs"
-version = "0.1.3"
+version = "0.1.5"
 dependencies = [
  "espeak-rs-sys",
  "ffi-support",
@@ -480,7 +480,7 @@ dependencies = [
 
 [[package]]
 name = "espeak-rs-sys"
-version = "0.1.3"
+version = "0.1.5"
 dependencies = [
  "bindgen 0.69.4",
  "cmake",
@@ -1062,7 +1062,7 @@ dependencies = [
 
 [[package]]
 name = "piper-rs-cli"
-version = "0.1.0"
+version = "0.1.5"
 dependencies = [
  "clap",
  "eyre",
@@ -1409,7 +1409,7 @@ dependencies = [
 
 [[package]]
 name = "sonic-rs-sys"
-version = "0.1.2"
+version = "0.1.5"
 dependencies = [
  "bindgen 0.59.2",
  "cc",
