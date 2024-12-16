@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::audio_ops;
+use crate::audio;
 use crate::core::{
     Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, PiperAudioResult, PiperError,
     PiperModel, PiperResult,
@@ -200,7 +200,7 @@ impl PiperSpeechSynthesizer {
             ));
         }
         let audio = AudioSamples::from(samples);
-        Ok(audio_ops::write_wave_samples_to_file(
+        Ok(audio::write_wave_samples_to_file(
             filename,
             audio.to_i16_vec().iter(),
             self.0.audio_output_info()?.sample_rate as u32,

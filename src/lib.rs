@@ -5,13 +5,13 @@ use ort::session::{Session, SessionInputValue, SessionInputs, SessionOutputs};
 use ort::value::Value;
 use serde::Deserialize;
 
-mod audio_ops;
+mod audio;
 mod core;
-pub mod synth;
 use core::{
     Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, PiperAudioResult, PiperError,
     PiperModel, PiperResult,
 };
+pub use audio::synth;
 use std::any::Any;
 use std::borrow::Cow;
 use std::collections::HashMap;

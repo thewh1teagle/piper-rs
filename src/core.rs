@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 
-pub use crate::audio_ops::{Audio, AudioInfo, AudioSamples, WaveWriterError};
+pub use crate::audio::{Audio, AudioInfo, AudioSamples, WaveWriterError};
 
 pub type PiperResult<T> = Result<T, PiperError>;
 pub type PiperAudioResult = PiperResult<Audio>;
