@@ -96,13 +96,13 @@ fn run(args: &Args) -> Result<()> {
         // Save to file
         let start_t = Instant::now();
         synth.synthesize_to_file(&PathBuf::from(&path), args.text.clone(), None)?;
-        tracing::debug!("Took {} seconds", start_t.elapsed().as_secs());
+        tracing::debug!("Took {:.2?}", start_t.elapsed());
         println!("Created {}", path);
     } else {
         // Play directly in memory
         let start_t = Instant::now();
         let audio = synth.synthesize_parallel(args.text.clone(), None)?;
-        tracing::debug!("Took {} seconds", start_t.elapsed().as_secs());
+        tracing::debug!("Took {:.2?}", start_t.elapsed());
         let mut samples: Vec<f32> = Vec::new();
         for result in audio {
             samples.append(&mut result.unwrap().into_vec());
