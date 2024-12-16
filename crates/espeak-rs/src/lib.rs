@@ -51,7 +51,10 @@ static ESPEAKNG_INIT: Lazy<ESpeakResult<()>> = Lazy::new(|| {
         );
         if es_sample_rate <= 0 {
             Err(ESpeakError(format!(
-                "Failed to initialize eSpeak-ng. Try setting `{}` environment variable to the directory that contains the `espeak-ng-data` directory. Error code: `{}`",
+                "Failed to initialize eSpeak-ng. Try setting `{}` environment variable to the directory that contains the `espeak-ng-data` directory. \
+                Error code: `{}`. You can download the required files with:\n\
+                wget https://github.com/thewh1teagle/piper-rs/releases/download/espeak-ng-files/espeak-ng-data.zip\n\
+                unzip espeak-ng-data.zip",
                 PIPER_ESPEAKNG_DATA_DIRECTORY,
                 es_sample_rate
             )))

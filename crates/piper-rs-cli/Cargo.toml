@@ -1,6 +1,6 @@
 [package]
 name = "piper-rs-cli"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["thewh1teagle"]
 license = "MIT"
@@ -12,7 +12,7 @@ repository = "https://github.com/thewh1teagle/piper-rs"
 
 [dependencies]
 # Local crates
-piper-rs = { path = "../../", version = "0.1.7", default-features = false }
+piper-rs = { path = "../../", version = "0.1.8", default-features = false }
 
 clap = { version = "4.5.22", features = ["derive"] }
 eyre = "0.6.12"
