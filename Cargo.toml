@@ -4,7 +4,7 @@ resolver = "1"
 
 [package]
 name = "piper-rs"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 license = "MIT"
 description = "Use piper TTS models in Rust"
@@ -12,8 +12,8 @@ repository = "https://github.com/thewh1teagle/piper-rs"
 
 [dependencies]
 # Local crates
-espeak-rs = { path = "crates/espeak-rs", version = "0.1.8", default-features = false }
-sonic-rs-sys = { path = "crates/sonic-rs-sys", version = "0.1.8" }
+espeak-rs = { path = "crates/espeak-rs", version = "0.1.9", default-features = false }
+sonic-rs-sys = { path = "crates/sonic-rs-sys", version = "0.1.9" }
 
 ndarray = "0.16.1"
 serde = { version = "1.0.160", features = ["derive"] }

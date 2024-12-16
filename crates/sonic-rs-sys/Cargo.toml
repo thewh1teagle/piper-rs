@@ -1,6 +1,6 @@
 [package]
 name = "sonic-rs-sys"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 authors = []
 description = "Rust bindings to sonic rate boost library"
@@ -10,13 +10,7 @@ categories = ["external-ffi-bindings", "api-bindings"]
 repository = "https://github.com/thewh1teagle/piper-rs"
 homepage = "https://github.com/thewh1teagle/piper-rs"
 
-include = [
-    "sonic/*.c",
-    "sonic/*.h",
-    "sonic/Makefile",
-    "src/*.rs",
-    "build.rs",
-]
+include = ["sonic/*.c", "sonic/*.h", "sonic/Makefile", "src/*.rs", "build.rs"]
 
 [build-dependencies]
 cc = "1.0.79"
