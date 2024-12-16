@@ -46,7 +46,7 @@ struct Args {
 fn show_error_hint() {
     eprintln!(
         "\n{}{}\n{}",
-        style("Hint: You can download the required files with:\n").bold().blue(),
+        style("Hint: You can try download the required files with:\n").bold().blue(),
         style("wget https://github.com/thewh1teagle/piper-rs/releases/download/espeak-ng-files/espeak-ng-data.tar.gz\n\
             tar xf espeak-ng-data.tar.gz").bold().green().italic(),
         style("Make sure the folder is placed next to the executable, in the working directory, or set the PIPER_ESPEAKNG_DATA_DIRECTORY environment variable.")
@@ -65,7 +65,11 @@ fn main() {
     match run(&args) {
         Ok(_) => {}
         Err(e) => {
-            if args.verbose {
+            if e.to_string().contains("Failed to initialize eSpeak-ng") {
+                if args.verbose {
+                    eprintln!("{:?}", e);
+                }
+            } else {
                 eprintln!("{:?}", e);
             }
             show_error_hint();
