@@ -7,11 +7,10 @@ use serde::Deserialize;
 
 mod audio;
 mod core;
-use core::{
-    Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, PiperAudioResult, PiperError,
-    PiperModel, PiperResult,
-};
 pub use audio::synth;
+use core::{Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, PiperModel};
+pub use core::{PiperAudioResult, PiperError, PiperResult};
+
 use std::any::Any;
 use std::borrow::Cow;
 use std::collections::HashMap;

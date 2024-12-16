@@ -6,6 +6,7 @@ use std::env;
 use std::error::Error;
 use std::ffi;
 use std::fmt;
+use std::path::Path;
 use std::path::PathBuf;
 
 pub type ESpeakResult<T> = Result<T, ESpeakError>;
@@ -18,6 +19,7 @@ const CLAUSE_TYPE_SENTENCE: i32 = 0x00080000;
 /// Name of the environment variable that points to the directory that contains `espeak-ng-data` directory
 /// only needed if `espeak-ng-data` directory is not in the expected location (i.e. eSpeak-ng is not installed system wide)
 const PIPER_ESPEAKNG_DATA_DIRECTORY: &str = "PIPER_ESPEAKNG_DATA_DIRECTORY";
+const ESPEAKNG_DATA_DIR_NAME: &str = "espeak-ng-data";
 
 #[derive(Debug, Clone)]
 pub struct ESpeakError(pub String);
@@ -33,12 +35,25 @@ impl fmt::Display for ESpeakError {
 static LANG_SWITCH_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\([^)]*\)").unwrap());
 static STRESS_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"[ˈˌ]").unwrap());
 static ESPEAKNG_INIT: Lazy<ESpeakResult<()>> = Lazy::new(|| {
-    let data_dir = match env::var(PIPER_ESPEAKNG_DATA_DIRECTORY) {
-        Ok(directory) => PathBuf::from(directory),
-        Err(_) => env::current_exe().unwrap().parent().unwrap().to_path_buf(),
+    let espeak_data_location = match env::var(PIPER_ESPEAKNG_DATA_DIRECTORY) {
+        Ok(env_dir) => PathBuf::from(env_dir), // 1. From PIPER_ESPEAKNG_DATA_DIRECTORY environment variable
+        Err(_) => {
+            // 2. From the current working directory (CWD)
+            let cwd = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            if cwd.join(ESPEAKNG_DATA_DIR_NAME).exists() {
+                cwd
+            } else {
+                // 3. From the parent directory of the current executable
+                env::current_exe()
+                    .unwrap_or_else(|_| PathBuf::new())
+                    .parent()
+                    .unwrap_or_else(|| Path::new("."))
+                    .to_path_buf()
+            }
+        }
     };
-    let es_data_path_ptr = if data_dir.join("espeak-ng-data").exists() {
-        rust_string_to_c(data_dir.display().to_string())
+    let es_data_path_ptr = if espeak_data_location.join(ESPEAKNG_DATA_DIR_NAME).exists() {
+        rust_string_to_c(espeak_data_location.display().to_string())
     } else {
         std::ptr::null()
     };
@@ -51,12 +66,8 @@ static ESPEAKNG_INIT: Lazy<ESpeakResult<()>> = Lazy::new(|| {
         );
         if es_sample_rate <= 0 {
             Err(ESpeakError(format!(
-                "Failed to initialize eSpeak-ng. Try setting `{}` environment variable to the directory that contains the `espeak-ng-data` directory. \
-                Error code: `{}`. You can download the required files with:\n\
-                wget https://github.com/thewh1teagle/piper-rs/releases/download/espeak-ng-files/espeak-ng-data.zip\n\
-                unzip espeak-ng-data.zip",
-                PIPER_ESPEAKNG_DATA_DIRECTORY,
-                es_sample_rate
+                "Failed to initialize eSpeak-ng. Try setting `{PIPER_ESPEAKNG_DATA_DIRECTORY}` environment variable to the directory that contains the `{ESPEAKNG_DATA_DIR_NAME}` directory. \
+                Error code: `{es_sample_rate}`."
             )))
         } else {
             Ok(())

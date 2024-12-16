@@ -6,6 +6,7 @@ cargo run -p piper-rs-cli en_US-hfc_female-medium.onnx.json "Hello from piper-rs
 */
 
 use clap::Parser;
+use console::style;
 use eyre::{bail, Result};
 use piper_rs::synth::PiperSpeechSynthesizer;
 use rodio::buffer::SamplesBuffer;
@@ -37,17 +38,45 @@ struct Args {
     /// Path to Model
     #[arg(long)]
     speaker_id: Option<i64>,
+
+    #[arg(long)]
+    verbose: bool,
 }
 
-fn main() -> Result<()> {
+fn show_error_hint() {
+    eprintln!(
+        "\n{}{}\n{}",
+        style("Hint: You can download the required files with:\n").bold().blue(),
+        style("wget https://github.com/thewh1teagle/piper-rs/releases/download/espeak-ng-files/espeak-ng-data.tar.gz\n\
+            tar xf espeak-ng.data.tar.gz").bold().green().italic(),
+        style("Make sure the folder is placed next to the executable, in the working directory, or set the PIPER_ESPEAKNG_DATA_DIRECTORY environment variable.")
+            .bold()
+            .blue() // Hint in blue
+    );
+}
+
+fn main() {
     tracing_subscriber::registry()
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
         .init();
     tracing::debug!("hi");
     let args = Args::parse();
+    match run(&args) {
+        Ok(_) => {}
+        Err(e) => {
+            if args.verbose {
+                eprintln!("{:?}", e);
+            }
+            show_error_hint();
+        }
+    }
+}
+
+fn run(args: &Args) -> Result<()> {
     let model = args
         .model
+        .clone()
         .map(|m| PathBuf::from(m))
         .unwrap_or_else(|| PathBuf::from(&args.config.replace(".onnx.json", ".onnx")));
     if !model.exists() {
@@ -59,16 +88,16 @@ fn main() -> Result<()> {
     }
     let synth = PiperSpeechSynthesizer::new(model).unwrap();
 
-    if let Some(path) = args.out {
+    if let Some(path) = &args.out {
         // Save to file
         let start_t = Instant::now();
-        synth.synthesize_to_file(&PathBuf::from(&path), args.text, None)?;
+        synth.synthesize_to_file(&PathBuf::from(&path), args.text.clone(), None)?;
         tracing::debug!("Took {} seconds", start_t.elapsed().as_secs());
         println!("Created {}", path);
     } else {
         // Play directly in memory
         let start_t = Instant::now();
-        let audio = synth.synthesize_parallel(args.text, None).unwrap();
+        let audio = synth.synthesize_parallel(args.text.clone(), None)?;
         tracing::debug!("Took {} seconds", start_t.elapsed().as_secs());
         let mut samples: Vec<f32> = Vec::new();
         for result in audio {

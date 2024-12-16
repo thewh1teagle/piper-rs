@@ -19,7 +19,7 @@ fn main() {
 
     let model = piper_rs::from_config_path(Path::new(&config_path)).unwrap();
     // Set speaker ID
-      if let Some(sid) = sid {
+    if let Some(sid) = sid {
         let sid = sid.parse::<i64>().expect("Speaker ID should be number!");
         model.set_speaker(sid);
     }
