@@ -226,6 +226,8 @@ fn main() {
     // General
     config
         .profile(&profile)
+        .define("ENABLE_TESTS", "OFF")
+        .define("COMPILE_INTONATIONS", if cfg!(feature = "compile-espeak-intonations") { "ON" } else { "OFF" })
         .very_verbose(std::env::var("CMAKE_VERBOSE").is_ok()) // Not verbose by default
         .always_configure(false);
 

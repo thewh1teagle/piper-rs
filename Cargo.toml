@@ -26,3 +26,7 @@ rayon = { version = "1.8.1" }
 
 [dev-dependencies]
 rodio = "0.19.0"
+
+[features]
+default = ["compile-espeak-intonations"]
+compile-espeak-intonations = ["espeak-rs/compile-espeak-intonations"]
