@@ -2,8 +2,7 @@
 wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx
 wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx.json
 
-cargo install piper-rs-cli
-piper-rs-cli en_US-hfc_female-medium.onnx.json "Hello from piper-rs-cli!"
+cargo run -p piper-rs-cli en_US-hfc_female-medium.onnx.json "Hello from piper-rs!"
 */
 
 use clap::Parser;

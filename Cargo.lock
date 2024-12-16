@@ -470,7 +470,7 @@ dependencies = [
 
 [[package]]
 name = "espeak-rs"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "espeak-rs-sys",
  "ffi-support",
@@ -480,7 +480,7 @@ dependencies = [
 
 [[package]]
 name = "espeak-rs-sys"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "bindgen 0.69.4",
  "cmake",
@@ -1045,7 +1045,7 @@ checksum = "bda66fc9667c18cb2758a2ac84d1167245054bcf85d5d1aaa6923f45801bdd02"
 
 [[package]]
 name = "piper-rs"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "espeak-rs",
  "flume",
