@@ -48,7 +48,7 @@ fn show_error_hint() {
         "\n{}{}\n{}",
         style("Hint: You can download the required files with:\n").bold().blue(),
         style("wget https://github.com/thewh1teagle/piper-rs/releases/download/espeak-ng-files/espeak-ng-data.tar.gz\n\
-            tar xf espeak-ng.data.tar.gz").bold().green().italic(),
+            tar xf espeak-ng-data.tar.gz").bold().green().italic(),
         style("Make sure the folder is placed next to the executable, in the working directory, or set the PIPER_ESPEAKNG_DATA_DIRECTORY environment variable.")
             .bold()
             .blue() // Hint in blue
