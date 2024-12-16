@@ -7,6 +7,7 @@ license = "MIT"
 description = "Use vits model based on piper in Rust"
 keywords = ["tts", "piper", "cli"]
 homepage = "https://github.com/thewh1teagle/piper-rs"
+repository = "https://github.com/thewh1teagle/piper-rs"
 
 
 [dependencies]
