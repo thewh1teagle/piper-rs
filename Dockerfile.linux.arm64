@@ -1,0 +1,56 @@
+# 1. Build
+# BUILDKIT_PROGRESS=plain docker buildx build -f Dockerfile.linux.arm64 -t piper-rs .
+# 2. Copy binary to host
+# docker run --rm -v $(pwd):/output piper-rs cp /piper-rs-cli /output
+FROM --platform=linux/amd64 ubuntu:22.04 as builder
+
+# Set environment variables to avoid prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++-aarch64-linux-gnu \
+    cmake \
+    git \
+    curl \
+    libasound2-dev \
+    clang \
+    librust-alsa-sys-dev
+
+# Get Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH=${PATH}:/root/.cargo/bin
+
+# Setup aarch64 toolchain
+RUN rustup target add aarch64-unknown-linux-gnu
+
+# Cross compile libasound2 for arm64
+RUN apt install -y autoconf automake libtool
+RUN git clone https://github.com/pop-os/libasound2
+WORKDIR libasound2
+RUN autoreconf -i
+RUN ./configure --prefix=$(pwd)/build --host aarch64-linux-gnu
+RUN make -j$(nproc)
+RUN make install
+RUN cp build/lib/libasound.* /usr/lib/aarch64-linux-gnu/
+
+# Clone the repository and checkout the specific branch
+WORKDIR /
+RUN git clone https://github.com/thewh1teagle/piper-rs --recursive
+
+# Change directory to the piper-rs folder
+WORKDIR piper-rs
+
+# Set the environment variables for cross-compiling
+ENV PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu
+ENV RUSTFLAGS="-C linker=aarch64-linux-gnu-gcc"
+
+WORKDIR /piper-rs
+RUN cargo build --target aarch64-unknown-linux-gnu -p piper-rs-cli
+
+# Copy the built binary to the host system
+# Adjust the source and destination paths based on where the binary is located in your container
+# For example, assuming the binary is in target/aarch64-unknown-linux-gnu/debug/piper-rs-cli
+FROM ubuntu:latest AS export
+COPY --from=builder /piper-rs/target/aarch64-unknown-linux-gnu/debug/piper-rs-cli /piper-rs-cli
