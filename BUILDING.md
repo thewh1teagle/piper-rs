@@ -10,10 +10,18 @@ error LNK2019: unresolved external symbol __std_mismatch_1 referenced in functio
 
 Please make sure your visual studio is >= 17.11 (Update through Visual studio installer)
 
+## Build on Linux 
+
+### Debian (trixie) :
+
+```console
+apt-get -y install --no-install-recommends libclang-dev
+cargo build --release
+```
+
 ## Publish new version
 
 ```console
-cargo publish -p espeak-rs-sys
 cargo publish -p espeak-rs
 cargo publish -p sonic-rs-sys
 cargo publish -p piper-rs

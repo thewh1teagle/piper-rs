@@ -7,14 +7,14 @@ cargo run -p piper-rs-cli en_US-hfc_female-medium.onnx.json "Hello from piper-rs
 
 use clap::Parser;
 use console::style;
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 use piper_rs::synth::PiperSpeechSynthesizer;
 use rodio::buffer::SamplesBuffer;
 use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -108,8 +108,9 @@ fn run(args: &Args) -> Result<()> {
             samples.append(&mut result.unwrap().into_vec());
         }
 
-        let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
-        let sink = rodio::Sink::try_new(&handle).unwrap();
+        let stream_handle =
+            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let sink = rodio::Sink::connect_new(&stream_handle.mixer());
 
         let buf = SamplesBuffer::new(1, 22050, samples);
         sink.append(buf);
