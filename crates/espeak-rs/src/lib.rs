@@ -1,5 +1,6 @@
-use espeak_rs_sys;
-use ffi_support::{rust_string_to_c, FfiStr};
+// use espeakng_sys;
+use espeakng_sys;
+use ffi_support::{FfiStr, rust_string_to_c};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::env;
@@ -8,6 +9,7 @@ use std::ffi;
 use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 pub type ESpeakResult<T> = Result<T, ESpeakError>;
 
@@ -58,11 +60,11 @@ static ESPEAKNG_INIT: Lazy<ESpeakResult<()>> = Lazy::new(|| {
         std::ptr::null()
     };
     unsafe {
-        let es_sample_rate = espeak_rs_sys::espeak_Initialize(
-            espeak_rs_sys::espeak_AUDIO_OUTPUT_AUDIO_OUTPUT_RETRIEVAL,
+        let es_sample_rate = espeakng_sys::espeak_Initialize(
+            espeakng_sys::espeak_AUDIO_OUTPUT_AUDIO_OUTPUT_RETRIEVAL,
             0,
             es_data_path_ptr,
-            espeak_rs_sys::espeakINITIALIZE_DONT_EXIT as i32,
+            espeakng_sys::espeakINITIALIZE_DONT_EXIT as i32,
         );
         if es_sample_rate <= 0 {
             Err(ESpeakError(format!(
@@ -74,6 +76,7 @@ static ESPEAKNG_INIT: Lazy<ESpeakResult<()>> = Lazy::new(|| {
         }
     }
 });
+static ESPEAK_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 pub fn text_to_phonemes(
     text: &str,
@@ -102,36 +105,85 @@ pub fn _text_to_phonemes(
     remove_lang_switch_flags: bool,
     remove_stress: bool,
 ) -> ESpeakResult<Vec<String>> {
-    if let Err(ref e) = Lazy::force(&ESPEAKNG_INIT) {
+    // Acquire an exclusive lock for all espeak-ng operations
+    let _guard = ESPEAK_LOCK.lock().unwrap();
+
+    // Initialization
+    if let Err(e) = Lazy::force(&ESPEAKNG_INIT) {
         return Err(e.clone());
     }
-    let set_voice_res = unsafe { espeak_rs_sys::espeak_SetVoiceByName(rust_string_to_c(language)) };
-    if set_voice_res != espeak_rs_sys::espeak_ERROR_EE_OK {
+
+    if text.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Voice configuration with error handling
+    let set_voice_res = unsafe { espeakng_sys::espeak_SetVoiceByName(rust_string_to_c(language)) };
+
+    if set_voice_res != espeakng_sys::espeak_ERROR_EE_OK {
         return Err(ESpeakError(format!(
             "Failed to set eSpeak-ng voice to: `{}` ",
             language
         )));
     }
+
+    // Phoneme mode configuration
     let calculated_phoneme_mode = match phoneme_separator {
-        Some(c) => ((c as u32) << 8u32) | espeak_rs_sys::espeakINITIALIZE_PHONEME_IPA,
-        None => espeak_rs_sys::espeakINITIALIZE_PHONEME_IPA,
+        Some(c) => ((c as u32) << 8u32) | espeakng_sys::espeakINITIALIZE_PHONEME_IPA,
+        None => espeakng_sys::espeakINITIALIZE_PHONEME_IPA,
     };
-    let phoneme_mode: i32 = calculated_phoneme_mode.try_into().unwrap();
+    let phoneme_mode: i32 = calculated_phoneme_mode.try_into().unwrap_or(
+        espeakng_sys::espeakINITIALIZE_PHONEME_IPA
+            .try_into()
+            .unwrap_or(0),
+    );
+
     let mut sent_phonemes = Vec::new();
     let mut phonemes = String::new();
     let mut text_c_char = rust_string_to_c(text) as *const ffi::c_char;
     let text_c_char_ptr = std::ptr::addr_of_mut!(text_c_char);
     let terminator: ffi::c_int = 0;
+
+    // Use a timeout to avoid infinite loops
+    let start_time = std::time::Instant::now();
+    let timeout = std::time::Duration::from_secs(5);
+
     while !text_c_char.is_null() {
+        if start_time.elapsed() > timeout {
+            return Err(ESpeakError(
+                "Text to phonemes conversion timeout".to_string(),
+            ));
+        }
+
+        // Use catch_unwind to capture potential panics
         let ph_str = unsafe {
-            let res = espeak_rs_sys::espeak_TextToPhonemes(
-                text_c_char_ptr as _,
-                espeak_rs_sys::espeakCHARS_UTF8.try_into().unwrap(),
-                phoneme_mode,
-            );
-            FfiStr::from_raw(res)
+            match std::panic::catch_unwind(|| {
+                espeakng_sys::espeak_TextToPhonemes(
+                    text_c_char_ptr as _,
+                    espeakng_sys::espeakCHARS_UTF8.try_into().unwrap_or(1),
+                    phoneme_mode,
+                )
+            }) {
+                Ok(res) => {
+                    if res.is_null() {
+                        return Err(ESpeakError(
+                            "espeak_TextToPhonemes returned NULL".to_string(),
+                        ));
+                    }
+                    FfiStr::from_raw(res)
+                }
+                Err(_) => {
+                    return Err(ESpeakError(
+                        "Panic during text to phonemes conversion".to_string(),
+                    ));
+                }
+            }
         };
+
+        // Add converted string directly
         phonemes.push_str(&ph_str.into_string());
+
+        // Processing intonations
         let intonation = terminator & 0x0000F000;
         if intonation == CLAUSE_INTONATION_FULL_STOP {
             phonemes.push('.');
@@ -142,13 +194,24 @@ pub fn _text_to_phonemes(
         } else if intonation == CLAUSE_INTONATION_EXCLAMATION {
             phonemes.push('!');
         }
+
         if (terminator & CLAUSE_TYPE_SENTENCE) == CLAUSE_TYPE_SENTENCE {
             sent_phonemes.push(std::mem::take(&mut phonemes));
         }
+
+        // Check that we have made progress in the text
+        let old_text_c_char = text_c_char;
+        // If the pointer has not changed, exit to avoid an infinite loop
+        if old_text_c_char == text_c_char {
+            break;
+        }
     }
+
     if !phonemes.is_empty() {
         sent_phonemes.push(std::mem::take(&mut phonemes));
     }
+
+    // Post-processing phonemes
     if remove_lang_switch_flags {
         sent_phonemes = Vec::from_iter(
             sent_phonemes
@@ -156,6 +219,7 @@ pub fn _text_to_phonemes(
                 .map(|sent| LANG_SWITCH_PATTERN.replace_all(&sent, "").into_owned()),
         );
     }
+
     if remove_stress {
         sent_phonemes = Vec::from_iter(
             sent_phonemes
@@ -163,6 +227,7 @@ pub fn _text_to_phonemes(
                 .map(|sent| STRESS_PATTERN.replace_all(&sent, "").into_owned()),
         );
     }
+
     Ok(sent_phonemes)
 }
 

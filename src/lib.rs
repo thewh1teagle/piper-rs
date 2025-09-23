@@ -1,22 +1,21 @@
 use espeak_rs::text_to_phonemes;
 use ndarray::Axis;
-use ndarray::{Array, Array1, Array2, ArrayView, Dim, IxDynImpl};
+use ndarray::{Array, Array1, Array2, ArrayD, ArrayView, Dim, IxDynImpl};
 use ort::session::{Session, SessionInputValue, SessionInputs, SessionOutputs};
 use ort::value::Value;
 use serde::Deserialize;
-
-mod audio;
-mod core;
-pub use audio::synth;
-use core::{Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes, PiperModel};
-pub use core::{PiperAudioResult, PiperError, PiperResult};
-
 use std::any::Any;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
+
+mod audio;
+mod core;
+pub use audio::synth;
+use core::{Audio, AudioInfo, AudioSamples, AudioStreamIterator, Phonemes};
+pub use core::{PiperAudioResult, PiperError, PiperModel, PiperResult};
 
 const MIN_CHUNK_SIZE: isize = 44;
 const MAX_CHUNK_SIZE: usize = 1024;
@@ -41,7 +40,7 @@ fn load_model_config(config_path: &Path) -> PiperResult<(ModelConfig, PiperSynth
                 "Faild to load model config: `{}`. Caused by: `{}`",
                 config_path.display(),
                 why
-            )))
+            )));
         }
     };
     let model_config: ModelConfig = match serde_json::from_reader(file) {
@@ -51,7 +50,7 @@ fn load_model_config(config_path: &Path) -> PiperResult<(ModelConfig, PiperSynth
                 "Faild to parse model config from file: `{}`. Caused by: `{}`",
                 config_path.display(),
                 why
-            )))
+            )));
         }
     };
     let synth_config = PiperSynthesisConfig {
@@ -239,7 +238,7 @@ trait VitsModelCommons {
                 return Err(PiperError::PhonemizationError(format!(
                     "Failed to phonemize given text using espeak-ng. Error: {}",
                     e
-                )))
+                )));
             }
         };
         Ok(phonemes.into())
@@ -258,7 +257,7 @@ pub struct VitsModel {
     synth_config: RwLock<PiperSynthesisConfig>,
     config: ModelConfig,
     speaker_map: HashMap<i64, String>,
-    session: Session,
+    session: RwLock<Session>,
 }
 
 impl VitsModel {
@@ -279,7 +278,7 @@ impl VitsModel {
                 return Err(PiperError::OperationError(format!(
                     "Failed to initialize onnxruntime inference session: `{}`",
                     err
-                )))
+                )));
             }
         };
         let speaker_map = reversed_mapping(&config.speaker_id_map);
@@ -288,7 +287,7 @@ impl VitsModel {
             synth_config: RwLock::new(synth_config),
             config,
             speaker_map,
-            session,
+            session: RwLock::new(session),
         })
     }
     fn infer_with_values(&self, input_phonemes: Vec<i64>) -> PiperAudioResult {
@@ -309,7 +308,9 @@ impl VitsModel {
             None
         };
 
-        let session = &self.session;
+        let mut session = self.session.write().expect("Failed to acquire write lock");
+        //let session = &self.session;
+
         let timer = std::time::Instant::now();
         let outputs = {
             let mut inputs = vec![
@@ -328,7 +329,7 @@ impl VitsModel {
                     return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
-                    )))
+                    )));
                 }
             }
         };
@@ -340,11 +341,13 @@ impl VitsModel {
                 return Err(PiperError::OperationError(format!(
                     "Failed to run model inference. Error: {}",
                     e
-                )))
+                )));
             }
         };
 
-        let audio = Vec::from(outputs.view().as_slice().unwrap());
+        //let audio = Vec::from(outputs.view().as_slice().unwrap());
+        let (_shape, data) = outputs;
+        let audio = Vec::from(data);
 
         Ok(Audio::new(
             audio.into(),
@@ -436,8 +439,8 @@ pub struct VitsStreamingModel {
     synth_config: RwLock<PiperSynthesisConfig>,
     config: ModelConfig,
     speaker_map: HashMap<i64, String>,
-    encoder_model: Session,
-    decoder_model: Arc<Session>,
+    encoder_model: RwLock<Session>,
+    decoder_model: Arc<RwLock<Session>>,
 }
 
 impl VitsStreamingModel {
@@ -453,16 +456,16 @@ impl VitsStreamingModel {
                 return Err(PiperError::OperationError(format!(
                     "Failed to initialize onnxruntime inference session: `{}`",
                     err
-                )))
+                )));
             }
         };
         let decoder_model = match create_inference_session(decoder_path) {
-            Ok(model) => Arc::new(model),
+            Ok(model) => Arc::new(RwLock::new(model)),
             Err(err) => {
                 return Err(PiperError::OperationError(format!(
                     "Failed to initialize onnxruntime inference session: `{}`",
                     err
-                )))
+                )));
             }
         };
         let speaker_map = reversed_mapping(&config.speaker_id_map);
@@ -471,8 +474,8 @@ impl VitsStreamingModel {
             synth_config: RwLock::new(synth_config),
             config,
             speaker_map,
-            encoder_model,
-            decoder_model,
+            encoder_model: RwLock::new(encoder_model),
+            decoder_model: decoder_model,
         })
     }
 
@@ -507,7 +510,11 @@ impl VitsStreamingModel {
             None
         };
 
-        let session = &self.encoder_model;
+        // let session = &self.encoder_model;
+        let mut session = self
+            .encoder_model
+            .write()
+            .expect("Failed to acquire write lock");
         {
             let mut inputs = vec![
                 SessionInputValue::from(Value::from_array(phoneme_inputs).unwrap()),
@@ -610,7 +617,7 @@ impl PiperModel for VitsStreamingModel {
         phonemes: String,
         chunk_size: usize,
         chunk_padding: usize,
-    ) -> PiperResult<AudioStreamIterator> {
+    ) -> PiperResult<AudioStreamIterator<'_>> {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phonemes = self.phonemes_to_input_ids(&phonemes, pad_id, bos_id, eos_id);
         let encoder_outputs = self.infer_encoder(phonemes)?;
@@ -642,10 +649,11 @@ impl EncoderOutputs {
                     return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
-                    )))
+                    )));
                 }
             };
-            z_t.view().clone().into_owned()
+            //z_t.view().clone().into_owned()
+            extract_tensor_to_array(z_t)
         };
         let y_mask = {
             let y_mask_t = match values["y_mask"].try_extract_tensor::<f32>() {
@@ -654,10 +662,11 @@ impl EncoderOutputs {
                     return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
-                    )))
+                    )));
                 }
             };
-            y_mask_t.view().clone().into_owned()
+            //y_mask_t.view().clone().into_owned()
+            extract_tensor_to_array(y_mask_t)
         };
         let p_duration = if values.contains_key("p_duration") {
             let p_duration_t = match values["p_duration"].try_extract_tensor::<f32>() {
@@ -666,10 +675,11 @@ impl EncoderOutputs {
                     return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
-                    )))
+                    )));
                 }
             };
-            Some(p_duration_t.view().clone().into_owned())
+            //Some(p_duration_t.view().clone().into_owned())
+            Some(extract_tensor_to_array(p_duration_t))
         } else {
             None
         };
@@ -680,10 +690,11 @@ impl EncoderOutputs {
                     return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
-                    )))
+                    )));
                 }
             };
-            g_t.view().clone().into_owned()
+            // g_t.view().clone().into_owned()
+            extract_tensor_to_array(g_t)
         } else {
             Array1::<f32>::from_iter([]).into_dyn()
         };
@@ -694,15 +705,22 @@ impl EncoderOutputs {
             g,
         })
     }
-    fn infer_decoder(&self, session: &Session) -> PiperResult<AudioSamples> {
+    fn infer_decoder(&self, session_lock: &RwLock<Session>) -> PiperResult<AudioSamples> {
+        let mut session = session_lock
+            .write()
+            .expect("Failed to acquire write lock on session");
+
         let outputs = {
             let mut inputs = vec![
-                SessionInputValue::from(Value::from_array(self.z.view()).unwrap()),
-                SessionInputValue::from(Value::from_array(self.y_mask.view()).unwrap()),
+                SessionInputValue::from(Value::from_array(self.z.clone()).unwrap()),
+                //SessionInputValue::from(Value::from_array(self.z.view()).unwrap()),
+                //SessionInputValue::from(Value::from_array(self.y_mask.view()).unwrap()),
+                SessionInputValue::from(Value::from_array(self.y_mask.clone()).unwrap()),
             ];
             if !self.g.is_empty() {
                 inputs.push(SessionInputValue::from(
-                    Value::from_array(self.g.view()).unwrap(),
+                    //Value::from_array(self.g.view()).unwrap(),
+                    Value::from_array(self.g.clone()).unwrap(),
                 ));
             }
             match session.run(SessionInputs::from(inputs.as_slice())) {
@@ -711,12 +729,13 @@ impl EncoderOutputs {
                     return Err(PiperError::OperationError(format!(
                         "Failed to run model inference. Error: {}",
                         e
-                    )))
+                    )));
                 }
             }
         };
         match outputs[0].try_extract_tensor::<f32>() {
-            Ok(out) => Ok(Vec::from(out.view().as_slice().unwrap()).into()),
+            // Ok(out) => Ok(Vec::from(out.view().as_slice().unwrap()).into()),
+            Ok(out) => Ok(Vec::from(out.1).into()),
             Err(e) => Err(PiperError::OperationError(format!(
                 "Failed to run model inference. Error: {}",
                 e
@@ -726,7 +745,7 @@ impl EncoderOutputs {
 }
 
 struct SpeechStreamer {
-    decoder_model: Arc<Session>,
+    decoder_model: Arc<RwLock<Session>>,
     encoder_outputs: EncoderOutputs,
     mel_chunker: AdaptiveMelChunker,
     one_shot: bool,
@@ -734,7 +753,7 @@ struct SpeechStreamer {
 
 impl SpeechStreamer {
     fn new(
-        decoder_model: Arc<Session>,
+        decoder_model: Arc<RwLock<Session>>,
         encoder_outputs: EncoderOutputs,
         chunk_size: usize,
         chunk_padding: usize,
@@ -760,18 +779,26 @@ impl SpeechStreamer {
     ) -> PiperResult<AudioSamples> {
         // println!("Mel index: {:?}\nAudio Index: {:?}", mel_index, audio_index);
         let audio = {
-            let session = Arc::clone(&self.decoder_model);
+            // let session = Arc::clone(&self.decoder_model);
+            let session_lock = Arc::clone(&self.decoder_model);
+            let mut session = session_lock
+                .write()
+                .expect("Failed to acquire write lock on session");
+
             let z_view = self.encoder_outputs.z.view();
             let y_mask_view = self.encoder_outputs.y_mask.view();
             let z_chunk = z_view.slice_axis(Axis(2), mel_index);
             let y_mask_chunk = y_mask_view.slice_axis(Axis(2), mel_index);
             let mut inputs = vec![
-                SessionInputValue::from(Value::from_array(z_chunk).unwrap()),
-                SessionInputValue::from(Value::from_array(y_mask_chunk).unwrap()),
+                SessionInputValue::from(Value::from_array(z_chunk.to_owned()).unwrap()),
+                SessionInputValue::from(Value::from_array(y_mask_chunk.to_owned()).unwrap()),
+                // SessionInputValue::from(Value::from_array(z_chunk).unwrap()),
+                // SessionInputValue::from(Value::from_array(y_mask_chunk).unwrap()),
             ];
             if !self.encoder_outputs.g.is_empty() {
                 inputs.push(SessionInputValue::from(
-                    Value::from_array(self.encoder_outputs.g.view()).unwrap(),
+                    Value::from_array(self.encoder_outputs.g.clone()).unwrap(),
+                    // Value::from_array(self.encoder_outputs.g.view()).unwrap(),
                 ));
             }
             let outputs = session
@@ -785,7 +812,8 @@ impl SpeechStreamer {
             let audio_t = outputs[0].try_extract_tensor::<f32>().map_err(|e| {
                 PiperError::OperationError(format!("Failed to run model inference. Error: {}", e))
             })?;
-            self.process_chunk_audio(audio_t.view().view(), audio_index)?
+            //self.process_chunk_audio(audio_t.view().view(), audio_index)?
+            self.process_chunk_audio(tensor_to_array_view(audio_t), audio_index)?
         };
         Ok(audio)
     }
@@ -876,4 +904,16 @@ impl Iterator for AdaptiveMelChunker {
         let audio_index = ndarray::Slice::new(start_padding * 256, end_padding.map(|i| i * 256), 1);
         Some((chunk_index, audio_index))
     }
+}
+
+fn extract_tensor_to_array<T: Clone>(tensor: (&ort::tensor::Shape, &[T])) -> ArrayD<T> {
+    let (_shape, data) = tensor;
+    Array1::from_vec(Vec::from(data)).into_dyn()
+}
+
+fn tensor_to_array_view<'a, T>(
+    tensor: (&'a ort::tensor::Shape, &'a [T]),
+) -> ArrayView<'a, T, Dim<IxDynImpl>> {
+    let (_shape, data) = tensor;
+    ArrayView::from(data).into_dyn()
 }

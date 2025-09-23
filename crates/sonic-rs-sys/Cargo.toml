@@ -1,7 +1,7 @@
 [package]
 name = "sonic-rs-sys"
-version = "0.1.9"
-edition = "2021"
+version = "0.1.10"
+edition = "2024"
 authors = []
 description = "Rust bindings to sonic rate boost library"
 license = "MIT"
@@ -13,7 +13,7 @@ homepage = "https://github.com/thewh1teagle/piper-rs"
 include = ["sonic/*.c", "sonic/*.h", "sonic/Makefile", "src/*.rs", "build.rs"]
 
 [build-dependencies]
-cc = "1.0.79"
-bindgen = { version = "0.59.1", default-features = false, features = [
+cc = "1.2.37"
+bindgen = { version = "0.71.1", default-features = false, features = [
     "runtime",
 ] }

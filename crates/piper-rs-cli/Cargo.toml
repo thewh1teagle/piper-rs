@@ -1,7 +1,7 @@
 [package]
 name = "piper-rs-cli"
 version = "0.1.9"
-edition = "2021"
+edition = "2024"
 authors = ["thewh1teagle"]
 license = "MIT"
 description = "Use vits model based on piper in Rust"
@@ -12,15 +12,18 @@ repository = "https://github.com/thewh1teagle/piper-rs"
 
 [dependencies]
 # Local crates
-piper-rs = { path = "../../", version = "0.1.9", default-features = false }
+piper-rs = { path = "../../", version = "0.1.10", default-features = false }
 
-console = "0.15.10"
+console = "0.16.1"
 clap = { version = "4.5.22", features = ["derive"] }
 eyre = "0.6.12"
-rodio = "0.20.1"
+rodio = "0.21.1"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
 [features]
 default = []
-compile-espeak-intonations = ["piper-rs/compile-espeak-intonations"]
+clang-runtime = ["bindgen/runtime"]
+
+[build-dependencies]
+bindgen = { version = "0.71.1", optional = true }
