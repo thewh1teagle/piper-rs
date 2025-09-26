@@ -58,13 +58,12 @@ fn extract_lib_names(out_dir: &Path, build_shared_libs: bool) -> Vec<String> {
         } else {
             "*.a"
         }
+    } else if build_shared_libs {
+        "*.so"
     } else {
-        if build_shared_libs {
-            "*.so"
-        } else {
-            "*.a"
-        }
+        "*.a"
     };
+
     let libs_dir = out_dir.join("lib");
     let pattern = libs_dir.join(lib_pattern);
     debug_log!("Extract libs {}", pattern.display());
@@ -277,10 +276,7 @@ fn main() {
             "LINK {}",
             format!("cargo:rustc-link-lib={}={}", espeak_libs_kind, lib)
         );
-        println!(
-            "{}",
-            format!("cargo:rustc-link-lib={}={}", espeak_libs_kind, lib)
-        );
+        println!("cargo:rustc-link-lib={}={}", espeak_libs_kind, lib);
     }
 
     // Windows debug

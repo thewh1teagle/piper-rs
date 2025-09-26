@@ -1,0 +1,45 @@
+name: "Continuous Integration"
+on: [ push ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: run unit tests
+    steps:
+      - uses: actions/checkout@v5
+        name: checkout
+        with:
+          submodules: 'true'
+      - uses: ./.github/actions/setup-build-environment
+      - name: Run unit tests
+        run: |
+          cargo test
+
+  fmt:
+    runs-on: ubuntu-latest
+    name: check rustfmt
+    steps:
+      - uses: actions/checkout@v5
+        name: checkout
+        with:
+          submodules: 'true'
+      - uses: ./.github/actions/setup-build-environment
+        with:
+          components: rustfmt
+      - name: Rustfmt check
+        uses: actions-rust-lang/rustfmt@v1
+
+  clippy:
+    runs-on: ubuntu-latest
+    name: check clippy
+    steps:
+      - uses: actions/checkout@v5
+        name: checkout
+        with:
+          submodules: 'true'
+      - uses: ./.github/actions/setup-build-environment
+        with:
+          components: clippy
+      - name: Run clippy
+        run: |
+          cargo clippy --all-targets --all-features -- -D warnings

@@ -1,4 +1,3 @@
-use espeak_rs_sys;
 use ffi_support::{rust_string_to_c, FfiStr};
 use once_cell::sync::Lazy;
 use regex::Regex;

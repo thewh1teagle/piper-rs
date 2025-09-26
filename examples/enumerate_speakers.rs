@@ -16,9 +16,9 @@ fn main() {
         .get_speakers()
         .unwrap()
         .unwrap()
-        .into_iter()
+        .iter()
         .collect::<Vec<_>>();
-    speakers.sort_by(|a, b| a.0.cmp(&b.0)); // Sort by name (the second element of the tuple)
+    speakers.sort_by(|a, b| a.0.cmp(b.0)); // Sort by name (the second element of the tuple)
 
     // Print the sorted speakers
     for (id, name) in speakers.iter() {
