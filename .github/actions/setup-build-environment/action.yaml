@@ -1,0 +1,19 @@
+name: Setup build environment
+inputs:
+  components:
+    required: false
+    default: ""
+    description: "additional cargo components to install"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      name: setup rust toolchain
+      with:
+        components: ${{ inputs.components }}
+
+    - name: Setup required system libraries
+      shell: bash
+      run: |
+        sudo apt-get update && sudo apt-get install -y libasound2-dev

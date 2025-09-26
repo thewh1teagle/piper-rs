@@ -10,8 +10,7 @@ jobs:
         name: checkout
         with:
           submodules: 'true'
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        name: setup rust toolchain
+      - uses: ./.github/actions/setup-build-environment
       - name: Run unit tests
         run: |
           cargo test
@@ -24,8 +23,7 @@ jobs:
         name: checkout
         with:
           submodules: 'true'
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        name: setup rust toolchain
+      - uses: ./.github/actions/setup-build-environment
         with:
           components: rustfmt
       - name: Rustfmt check
@@ -39,8 +37,7 @@ jobs:
         name: checkout
         with:
           submodules: 'true'
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        name: setup rust toolchain
+      - uses: ./.github/actions/setup-build-environment
         with:
           components: clippy
       - name: Run clippy
