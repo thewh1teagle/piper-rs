@@ -5,3 +5,4 @@ target/
 *.tar.bz2
 .DS_Store
 !.vscode/*.json
+.idea
