@@ -610,7 +610,7 @@ impl PiperModel for VitsStreamingModel {
         phonemes: String,
         chunk_size: usize,
         chunk_padding: usize,
-    ) -> PiperResult<AudioStreamIterator> {
+    ) -> PiperResult<AudioStreamIterator<'_>> {
         let (pad_id, bos_id, eos_id) = self.get_meta_ids();
         let phonemes = self.phonemes_to_input_ids(&phonemes, pad_id, bos_id, eos_id);
         let encoder_outputs = self.infer_encoder(phonemes)?;

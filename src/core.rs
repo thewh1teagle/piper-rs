@@ -118,7 +118,7 @@ pub trait PiperModel {
         #[allow(unused_variables)] phonemes: String,
         #[allow(unused_variables)] chunk_size: usize,
         #[allow(unused_variables)] chunk_padding: usize,
-    ) -> PiperResult<AudioStreamIterator> {
+    ) -> PiperResult<AudioStreamIterator<'_>> {
         Err(PiperError::OperationError(
             "Streaming synthesis is not supported for this model".to_string(),
         ))
