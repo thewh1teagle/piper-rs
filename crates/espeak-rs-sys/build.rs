@@ -214,6 +214,9 @@ fn main() {
         if build_shared_libs { "ON" } else { "OFF" },
     );
 
+    // Use the extended dictionary for Russian
+    config.define("HAVE_RU_EXTENDED_DICTIONARY", "1");
+
     if cfg!(windows) {
         config.static_crt(static_crt);
     }
