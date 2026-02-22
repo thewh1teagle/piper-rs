@@ -64,12 +64,15 @@ fn load_model_config(config_path: &Path) -> PiperResult<(ModelConfig, PiperSynth
 }
 
 fn create_inference_session(model_path: &Path) -> Result<Session, ort::Error> {
-    Session::builder()?
-        // .with_parallel_execution(true)?
-        // .with_inter_threads(16)?
-        // .with_optimization_level(ort::GraphOptimizationLevel::Level3)?
-        // .with_memory_pattern(false)?
-        .commit_from_file(model_path)
+    let mut builder = Session::builder()?;
+
+    #[cfg(feature = "cuda")]
+    {
+        use ort::execution_providers::CUDAExecutionProvider;
+        builder = builder.with_execution_providers([CUDAExecutionProvider::default().build()])?;
+    }
+
+    builder.commit_from_file(model_path)
 }
 
 pub fn from_config_path(config_path: &Path) -> PiperResult<Arc<dyn PiperModel + Send + Sync>> {
