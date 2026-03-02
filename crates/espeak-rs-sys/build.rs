@@ -291,6 +291,7 @@ fn main() {
     // Linux
     if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-lib=dylib=pcaudio"); // Link system pcaudio
     }
 
     if target.contains("apple") {
