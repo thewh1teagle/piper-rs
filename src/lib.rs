@@ -72,13 +72,13 @@ fn create_inference_session(model_path: &Path) -> Result<Session, ort::Error> {
     #[cfg(feature = "cuda")]
     {
         use ort::execution_providers::CUDAExecutionProvider;
-        builder = builder.with_execution_providers([CUDAExecutionProvider::default().build()])?;
+        builder = builder.with_execution_providers([CUDAExecutionProvider::default().build().error_on_failure()])?;
     }
 
     #[cfg(feature = "rocm")]
     {
         use ort::execution_providers::ROCmExecutionProvider;
-        builder = builder.with_execution_providers([ROCmExecutionProvider::default().build()])?;
+        builder = builder.with_execution_providers([ROCmExecutionProvider::default().build().error_on_failure()])?;
     }
 
     builder.commit_from_file(model_path)
