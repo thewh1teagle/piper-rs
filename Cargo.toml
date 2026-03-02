@@ -31,4 +31,5 @@ rodio = "0.19.0"
 default = ["compile-espeak-intonations"]
 compile-espeak-intonations = ["espeak-rs/compile-espeak-intonations"]
 cuda = ["ort/cuda"]
+rocm = ["ort/rocm"]
 load-dynamic = ["ort/load-dynamic"]

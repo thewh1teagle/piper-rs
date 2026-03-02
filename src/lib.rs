@@ -63,6 +63,9 @@ fn load_model_config(config_path: &Path) -> PiperResult<(ModelConfig, PiperSynth
     Ok((model_config, synth_config))
 }
 
+#[cfg(all(feature = "cuda", feature = "rocm"))]
+compile_error!("Features \"cuda\" and \"rocm\" are mutually exclusive");
+
 fn create_inference_session(model_path: &Path) -> Result<Session, ort::Error> {
     let mut builder = Session::builder()?;
 
@@ -70,6 +73,12 @@ fn create_inference_session(model_path: &Path) -> Result<Session, ort::Error> {
     {
         use ort::execution_providers::CUDAExecutionProvider;
         builder = builder.with_execution_providers([CUDAExecutionProvider::default().build()])?;
+    }
+
+    #[cfg(feature = "rocm")]
+    {
+        use ort::execution_providers::ROCmExecutionProvider;
+        builder = builder.with_execution_providers([ROCmExecutionProvider::default().build()])?;
     }
 
     builder.commit_from_file(model_path)
