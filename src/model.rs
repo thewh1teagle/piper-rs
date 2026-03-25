@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use ndarray::{Array1, Array2};
-use ort::session::{Session, SessionInputValue, SessionInputs};
-use ort::value::Value;
+use ort::session::Session;
+use ort::value::Tensor;
 use serde::Deserialize;
 
 use crate::PiperError;
@@ -58,7 +58,7 @@ pub fn phonemes_to_ids(config: &ModelConfig, phonemes: &str) -> Vec<i64> {
 }
 
 pub fn infer(
-    session: &Session,
+    session: &mut Session,
     config: &ModelConfig,
     phonemes: &str,
     noise_scale: f32,
@@ -72,23 +72,21 @@ pub fn infer(
     let input_lengths = Array1::<i64>::from_iter([input_len as i64]);
     let scales = Array1::<f32>::from_iter([noise_scale, length_scale, noise_w]);
 
-    let mut inputs = vec![
-        SessionInputValue::from(Value::from_array(input).unwrap()),
-        SessionInputValue::from(Value::from_array(input_lengths).unwrap()),
-        SessionInputValue::from(Value::from_array(scales).unwrap()),
-    ];
-    if config.num_speakers > 1 {
+    let input_t = Tensor::<i64>::from_array(([1, input_len], input.into_raw_vec_and_offset().0.into_boxed_slice())).unwrap();
+    let lengths_t = Tensor::<i64>::from_array(([1], input_lengths.into_raw_vec_and_offset().0.into_boxed_slice())).unwrap();
+    let scales_t = Tensor::<f32>::from_array(([3], scales.into_raw_vec_and_offset().0.into_boxed_slice())).unwrap();
+
+    let outputs = if config.num_speakers > 1 {
         let sid = Array1::<i64>::from_iter([speaker_id]);
-        inputs.push(SessionInputValue::from(Value::from_array(sid).unwrap()));
-    }
+        let sid_t = Tensor::<i64>::from_array(([1], sid.into_raw_vec_and_offset().0.into_boxed_slice())).unwrap();
+        session.run(ort::inputs![input_t, lengths_t, scales_t, sid_t])
+    } else {
+        session.run(ort::inputs![input_t, lengths_t, scales_t])
+    }.map_err(|e| PiperError::InferenceError(format!("Inference failed: {}", e)))?;
 
-    let outputs = session
-        .run(SessionInputs::from(inputs.as_slice()))
-        .map_err(|e| PiperError::InferenceError(format!("Inference failed: {}", e)))?;
-
-    let audio = outputs[0]
+    let (_, audio) = outputs[0]
         .try_extract_tensor::<f32>()
         .map_err(|e| PiperError::InferenceError(format!("Failed to extract output: {}", e)))?;
 
-    Ok(audio.view().as_slice().unwrap().to_vec())
+    Ok(audio.to_vec())
 }

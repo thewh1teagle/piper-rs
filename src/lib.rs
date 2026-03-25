@@ -70,7 +70,7 @@ impl Piper {
     ///
     /// Returns `(samples, sample_rate)` where samples are f32 PCM audio.
     pub fn create(
-        &self,
+        &mut self,
         text: &str,
         is_phonemes: bool,
         speaker_id: Option<i64>,
@@ -88,7 +88,7 @@ impl Piper {
 
         let inf = &self.config.inference;
         let samples = infer(
-            &self.session,
+            &mut self.session,
             &self.config,
             &phonemes,
             noise_scale.unwrap_or(inf.noise_scale),
