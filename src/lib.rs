@@ -8,7 +8,8 @@ use espeak_rs::text_to_phonemes;
 use ort::session::Session;
 use serde_json;
 
-use model::{infer, ModelConfig};
+pub use model::ModelConfig;
+use model::infer;
 
 #[derive(Debug)]
 pub enum PiperError {
@@ -64,6 +65,10 @@ impl Piper {
                 ))
             })?;
         Ok(Self { config, session })
+    }
+
+    pub fn from_session(session: Session, config: ModelConfig) -> Self {
+        Self { session, config }
     }
 
     /// Synthesize speech from text or phonemes.
