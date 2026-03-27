@@ -213,7 +213,9 @@ fn main() {
         "BUILD_SHARED_LIBS",
         if build_shared_libs { "ON" } else { "OFF" },
     );
-
+    
+    config.define("HAVE_RU_EXTENDED_DICTIONARY", "1");
+    
     if cfg!(windows) {
         config.static_crt(static_crt);
     }
